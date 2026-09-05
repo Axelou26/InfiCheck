@@ -39,3 +39,13 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# BDPM raw downloads (regenerable via npm run import:bdpm)
+scripts/bdpm-raw/
+
+# Paquets contenu OTA (régénérables via npm run publish:content)
+dist/content/
+
+# Env locale (URL manifeste, etc.)
+.env
+.env.local

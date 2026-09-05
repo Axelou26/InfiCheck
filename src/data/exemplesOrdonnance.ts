@@ -1,0 +1,166 @@
+/** Libellés concrets à porter sur l’ordonnance (dispositifs, examens, vaccins, etc.). */
+export const EXEMPLES_ORDONNANCE: Record<string, string[]> = {
+  'vac-calendrier': [
+    'Vaccin du calendrier des vaccinations en vigueur — patient ≥ 11 ans',
+    'Selon recommandations du calendrier vaccinal national',
+  ],
+  'vac-grippe': ['Vaccin antigrippal saisonnier — patient ≥ 11 ans'],
+  'vac-covid': ['Vaccin Covid-19 — patient ≥ 5 ans'],
+
+  'plaie-supports': [
+    'Matelas d’aide à la prévention / traitement d’escarre à air dynamique',
+    'Matelas / sur-matelas anti-escarre à air statique',
+    'Sur-matelas anti-escarre en mousse viscoélastique',
+    'Sur-matelas anti-escarre en gel ou mousse et gel',
+    'Sur-matelas à modules amovibles / découpe gaufrier',
+    'Coussin anti-escarre (air, gel ou mousse)',
+    'Cales de positionnement anti-escarre',
+  ],
+  'plaie-sprays': ['Spray protecteur cutané — prévention / traitement de la plaie'],
+  'plaie-anesthesiques': [
+    'Anesthésique local (crème / gel / patch / spray) — hors forme injectable',
+  ],
+  'plaie-nitrate': ['Nitrate d’argent — hyperbourgeonnement, faible dosage'],
+  'plaie-contention': [
+    'Bas de contention — force de compression à l’identique',
+    'Collants de contention — force à l’identique',
+    'Chaussettes de contention — force à l’identique',
+    'Bandes de contention — force à l’identique',
+  ],
+  'plaie-pansements': [
+    'Pansements adhésifs stériles avec compresse intégrée — durée initiale 7 jours',
+    'Compresses stériles de coton hydrophile (adhésives ou non adhérentes)',
+    'Pansements / compresses absorbants non adhérents pour plaies productives',
+    'Compresses stériles non tissées / gaze hydrophile',
+    'Pansements hydrocolloïdes',
+    'Pansements hydrocellulaires',
+    'Pansements alginates',
+    'Pansements hydrogels',
+    'Pansements hydrofibres / fibres à haut pouvoir d’absorption',
+    'Pansements à base de charbon actif',
+    'Pansements à l’acide hyaluronique',
+    'Pansements interfaces (silicone / CMC)',
+    'Pansements vaselinés / irrigo-absorbants',
+    'Pansements à l’argent',
+    'Pansements super-absorbants',
+    'Produits hémostatiques (compresses de collagène)',
+    'Films adhésifs semi-perméables, filets / jerseys tubulaires',
+    'Sparadraps, bandes de crêpe / extensibles, sets pour plaies',
+    'Matériel d’aide à la détersion',
+    'Champ stérile / dispositifs de rapprochement cutané adhésifs',
+  ],
+  'plaie-antiseptiques': [
+    'Antiseptique à large spectre — sans antibiotique',
+    'Uniquement dans les 5 premiers jours — brûlure ou plaie traumatique souillée',
+    'Hors plaie du pied diabétique',
+  ],
+
+  'sex-contraception-orale': [
+    'Renouvellement contraceptif oral — durée max. 6 mois',
+    'Ordonnance médicale initiale datant de moins d’un an',
+    'Mention obligatoire : « Renouvellement infirmier » + identité IDE + n° Ordre',
+  ],
+  'sex-urgence': [
+    'Contraception d’urgence — lévonorgestrel 1,5 mg',
+    'Contraception d’urgence — ulipristal acétate 30 mg',
+  ],
+  'sex-preservatifs': ['Préservatifs'],
+  'sex-bhcg': ['Dosage sanguin β-HCG (confirmation et datation de grossesse)'],
+  'sex-ist': [
+    'Dépistage VIH',
+    'Dépistage hépatite B',
+    'Dépistage hépatite C',
+    'Dépistage syphilis',
+    'Dépistage Chlamydia',
+    'Dépistage Gonocoque',
+  ],
+
+  'tabac-substituts': [
+    'Substitut nicotinique — dispositif transdermique (patch)',
+    'Substitut nicotinique — gommes à mâcher',
+    'Substitut nicotinique — pastilles / comprimés à sucer',
+    'Substitut nicotinique — inhalateur / spray buccal',
+  ],
+  'tabac-bilan': [
+    'Cholestérol total (bilan facteurs de risque CV)',
+    'Triglycérides',
+    'Glycémie à jeun',
+  ],
+
+  'prod-antalgiques': [
+    'Paracétamol (antalgique / antipyrétique palier I)',
+    'Ibuprofène (antalgique / antipyrétique palier I)',
+    'Acide acétylsalicylique / aspirine (palier I, si adapté)',
+  ],
+  'prod-adaptation-douleur': [
+    'Adaptation de posologie antalgique selon la prescription médicale initiale',
+  ],
+  'prod-solutions': [
+    'Chlorure de sodium 0,9 % (sérum physiologique) — PMF',
+    'Solution stérile pour irrigation / soin',
+    'Produit antiseptique',
+  ],
+  'prod-dm-incontinence': [
+    'Étui pénien + joint + raccord',
+    'Plat bassin / urinal',
+    'Poches pour incontinent / stomisé (+ supports, ceinture, clamp…)',
+    'Tampon / bouchon de matières fécales / collecteur',
+    'Nécessaire pour irrigation colique',
+    'Sondes vésicales pour autosondage / hétérosondage',
+    'Sonde vésicale à demeure — renouvellement uniquement',
+  ],
+  'prod-aides-techniques': [
+    'Cerceau de lit',
+    'Location de béquilles',
+    'Location de cannes',
+    'Soulève-malade mécanique',
+    'Soulève-malade électrique',
+  ],
+  'prod-perfusion': [
+    'Appareil à perfusion stérile non réutilisable — perfusion à domicile',
+    'Perfuseur de précision / panier de perfusion',
+    'Accessoires à usage unique de remplissage (perfuseur / diffuseur portable)',
+    'Accessoires pose au bras — uniquement sans cathéter implantable',
+    'Aiguilles de chambre à cathéter implantable (CCI déjà en place)',
+    'Pansements de maintien de cathéter central / PICC déjà en place',
+    'Prolongateur / robinet 3 voies / adhésif transparent',
+    'Seringues ou aiguilles pour entretien / rinçage / héparinisation (stériles, non réutilisables)',
+    'Pied / potence à sérum à roulettes',
+  ],
+  'prod-nutrition-enterale': [
+    'Sonde naso-gastrique pour nutrition entérale à domicile',
+    'Sonde naso-entérale pour nutrition entérale à domicile',
+    'Renouvellement du matériel de nutrition entérale (tubulures / accessoires) — pas de 1re prescription du matériel hors sonde',
+  ],
+  'prod-ortheses-membres': [
+    'Bas de contention jambe — renouvellement à l’identique',
+    'Bas de contention cuisse — renouvellement à l’identique',
+    'Chaussettes de contention + suppléments associés — renouvellement à l’identique',
+  ],
+  'prod-glycemie': [
+    'Bandelettes d’autosurveillance glycémique — renouvellement à l’identique',
+    'Lancettes / autopiqueurs à usage unique — renouvellement',
+    'Seringues / aiguilles pour stylo injecteur — renouvellement',
+    'Capteur / lecteur de glucose interstitiel — renouvellement à l’identique',
+  ],
+
+  'bio-inr': [
+    'INR — renouvellement (traitement AVK)',
+    'Si déséquilibre : renouvellement INR pendant quelques jours',
+  ],
+  'bio-nfs': [
+    'Numération formule sanguine (NFS)',
+    'Plaquettes',
+    'Ionogramme sanguin',
+  ],
+  'bio-ecbu': ['ECBU avec antibiogramme si nécessaire'],
+  'bio-glycemie': [
+    'Glycémie à jeun',
+    'Glycémie en urgence (déséquilibre du diabète / hypoglycémie)',
+  ],
+  'bio-diabete': [
+    'Créatininémie — patient diabétique connu',
+    'Albuminurie / créatininurie sur échantillon',
+    'HbA1c — si non prescrit dans les 3 derniers mois',
+  ],
+};
