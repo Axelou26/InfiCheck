@@ -16,7 +16,7 @@ const DB_PATH = path.join(OUT_DIR, 'inficheck.db');
 const META_PATH = path.join(OUT_DIR, 'meta.json');
 const ITEMS_PATH = path.join(__dirname, 'arrete-items.json');
 
-const CATALOG_VERSION = '2026-08-22-all';
+const CATALOG_VERSION = '2026-09-06-clair';
 
 const ARRETE_ITEMS = JSON.parse(fs.readFileSync(ITEMS_PATH, 'utf8'));
 

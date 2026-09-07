@@ -17,7 +17,6 @@ export const colors = {
   primarySoft: '#DEE7DB',
   primaryTint: '#EDF2EB',
   accent: '#9B4B32',
-  accentMid: '#BB6244',
   accentSoft: '#F7E6DE',
   warn: '#8F6520',
   warnSoft: '#F9EED8',
@@ -27,8 +26,6 @@ export const colors = {
   okSoft: '#E2EFE5',
   border: '#E6DACB',
   borderSoft: '#F0E7DA',
-  borderStrong: '#D2BC9E',
-  clay: '#D4B99A',
   badgePrescribe: '#3D5140',
   badgeRenew: '#5A7359',
   badgeBoth: '#9B4B32',
@@ -42,11 +39,8 @@ export const colors = {
 /** Dégradés — toujours au moins deux teintes (contrainte de `expo-linear-gradient`). */
 export const gradients = {
   hero: ['#4A6149', '#3A4F3D', '#2B3B2E'] as const,
-  heroAccent: ['#B0603F', '#96442C'] as const,
   primary: ['#4E6650', '#37493A'] as const,
-  accent: ['#BB6244', '#95462D'] as const,
   glassLight: ['rgba(255,255,255,0.22)', 'rgba(255,255,255,0.04)'] as const,
-  fadeToBg: ['rgba(246,241,233,0)', '#F6F1E9'] as const,
 };
 
 /**
@@ -128,7 +122,6 @@ export const radii = {
 };
 
 export const typography = {
-  display: { fontSize: 40, fontWeight: '800' as const, letterSpacing: -1.2, lineHeight: 44 },
   hero: { fontSize: 34, fontWeight: '800' as const, letterSpacing: -0.8, lineHeight: 39 },
   title: { fontSize: 24, fontWeight: '800' as const, letterSpacing: -0.4, lineHeight: 30 },
   subtitle: { fontSize: 19, fontWeight: '800' as const, letterSpacing: -0.2, lineHeight: 25 },
@@ -145,40 +138,39 @@ export const typography = {
   label: { fontSize: 14, fontWeight: '700' as const, lineHeight: 18 },
 };
 
+function hexToRgba(hex: string, opacity: number): string {
+  const raw = hex.replace('#', '');
+  const full = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
+  const n = parseInt(full, 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
+/** Ombre CSS unique (RN Web / New Arch) — remplace les props shadow* dépréciées. */
+function boxShadow(
+  offsetX: number,
+  offsetY: number,
+  blur: number,
+  color: string,
+  opacity: number,
+) {
+  return {
+    boxShadow: `${offsetX}px ${offsetY}px ${blur}px ${hexToRgba(color, opacity)}`,
+  };
+}
+
 export const shadow = {
   /** Ombre discrète pour les cartes posées sur le fond crème. */
-  card: {
-    shadowColor: '#3D5140',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  raised: {
-    shadowColor: '#2A3A2D',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.14,
-    shadowRadius: 22,
-    elevation: 8,
-  },
-  floating: {
-    shadowColor: '#22211E',
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.18,
-    shadowRadius: 28,
-    elevation: 14,
-  },
+  card: boxShadow(0, 4, 12, '#3D5140', 0.08),
+  raised: boxShadow(0, 10, 22, '#2A3A2D', 0.14),
+  floating: boxShadow(0, 14, 28, '#22211E', 0.18),
 };
 
 /** Ombre teintée : donne du relief aux cartes colorées (favoris, domaines). */
 export function glow(hex: string) {
-  return {
-    shadowColor: hex,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.32,
-    shadowRadius: 16,
-    elevation: 6,
-  };
+  return boxShadow(0, 8, 16, hex, 0.32);
 }
 
 export type DomainPalette = {
@@ -210,10 +202,4 @@ const FALLBACK_PALETTE: DomainPalette = {
 
 export function domainPalette(id: string): DomainPalette {
   return DOMAIN_PALETTES[id as DomaineId] ?? FALLBACK_PALETTE;
-}
-
-/** Conservé pour les usages « pastille » simples (fond + texte). */
-export function domainTint(id: string): { bg: string; fg: string } {
-  const palette = domainPalette(id);
-  return { bg: palette.tint, fg: palette.onTint };
 }

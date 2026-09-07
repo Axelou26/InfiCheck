@@ -26,7 +26,7 @@ export function checklistForItem(item: ArreteItem): ChecklistPoint[] {
           ? 'Prescription de 1re intention — pas un renouvellement hors cadre'
           : item.modalite === 'renouveler'
             ? 'Renouvellement à l’identique — pas une 1re intention'
-            : 'Modalité correcte : 1re intention ou renouvellement, selon le cas',
+            : 'Modalité correcte : prescrire ou renouveler, selon le cas',
     },
     {
       id: 'conditions',

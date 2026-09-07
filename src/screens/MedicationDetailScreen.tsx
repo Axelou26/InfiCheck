@@ -8,7 +8,9 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { FavoriteToggle } from '../components/FavoriteToggle';
 import { eligibiliteTone } from '../components/EligibiliteBadge';
 import { MedMonogram, RemboursementBadge } from '../components/MedIdentity';
+import { BackButton } from '../components/NavChrome';
 import { Collapsible } from '../components/controls';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   GhostButton,
   Pill,
@@ -54,6 +56,7 @@ function firstHref(html: string) {
 }
 
 export function MedicationDetailScreen({ route, navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const [med, setMed] = useState<BdpmMedicamentDetail | null>(null);
   const [linked, setLinked] = useState<ArreteItem | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -63,7 +66,6 @@ export function MedicationDetailScreen({ route, navigation }: Props) {
     getMedicamentDetail(route.params.medicationId).then(async (m) => {
       setMed(m);
       if (m) {
-        navigation.setOptions({ title: m.nomCommercial });
         void pushRecent({
           kind: 'med',
           id: m.id,
@@ -76,7 +78,7 @@ export function MedicationDetailScreen({ route, navigation }: Props) {
         setLinked(await getItemById(m.itemArreteId));
       }
     });
-  }, [route.params.medicationId, navigation]);
+  }, [route.params.medicationId]);
 
   useEffect(
     () => () => {
@@ -118,13 +120,10 @@ export function MedicationDetailScreen({ route, navigation }: Props) {
           colors={HERO_GRADIENTS[med.niveauIde]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.hero}
+          style={[styles.hero, { paddingTop: insets.top + spacing.sm }]}
         >
           <View style={styles.heroTop}>
-            <View style={styles.heroStatus}>
-              <Ionicons name={tone.icon} size={16} color={colors.white} />
-              <Text style={styles.heroStatusText}>{tone.long}</Text>
-            </View>
+            <BackButton light />
             <FavoriteToggle
               kind="med"
               id={med.id}
@@ -132,6 +131,10 @@ export function MedicationDetailScreen({ route, navigation }: Props) {
               subtitle={med.substances || 'BDPM'}
               accent={tone.solid}
             />
+          </View>
+          <View style={styles.heroStatus}>
+            <Ionicons name={tone.icon} size={16} color={colors.white} />
+            <Text style={styles.heroStatusText}>{tone.long}</Text>
           </View>
           {med.conditionsIde ? (
             <View style={styles.heroConditions}>
@@ -154,7 +157,11 @@ export function MedicationDetailScreen({ route, navigation }: Props) {
           </View>
 
           <View style={styles.chipRow}>
-            <RemboursementBadge remboursable={med.remboursable} tauxLabel={med.tauxRemboursement} />
+            <RemboursementBadge
+              remboursable={med.remboursable}
+              tauxLabel={med.tauxRemboursement}
+              showMutuelleHint
+            />
             {dispo ? <Pill label={dispo} tone="danger" icon="warning-outline" /> : null}
             {med.hasInfoImportante ? (
               <Pill label="Info de sécurité" tone="warn" icon="information-circle-outline" />
@@ -328,7 +335,7 @@ export function MedicationDetailScreen({ route, navigation }: Props) {
           {med.presentations.length > 0 ? (
             <Collapsible
               title={`Présentations (${med.presentations.length})`}
-              subtitle="CIP, prix, remboursement"
+              subtitle="CIP, prix, taux AMO"
               icon="cube"
             >
               {med.presentations.slice(0, 12).map((p, i) => (
@@ -340,9 +347,9 @@ export function MedicationDetailScreen({ route, navigation }: Props) {
                       .join(' · ')}
                   </Text>
                   {p.tauxRemboursement ? (
-                    <Pill label={`Remboursable ${p.tauxRemboursement}`} tone="accent" dot />
+                    <Pill label={`AMO ${p.tauxRemboursement}`} tone="accent" dot />
                   ) : (
-                    <Pill label="Non remboursable" tone="neutral" />
+                    <Pill label="Non remboursable AMO" tone="neutral" />
                   )}
                 </View>
               ))}
@@ -439,7 +446,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: radii.lg,
   },
   heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
-  heroStatus: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  heroStatus: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   heroStatusText: { flex: 1, color: colors.white, fontWeight: '800', fontSize: 14.5, lineHeight: 20 },
   heroConditions: {
     backgroundColor: 'rgba(0,0,0,0.16)',

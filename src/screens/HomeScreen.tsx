@@ -1,15 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MenuButton } from '../components/AppMenu';
 import { ContentUpdateBanner } from '../components/ContentUpdateCard';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
+import {
+  MedAttrFilterChips,
+  countActiveMedAttrs,
+  medAttrToQuery,
+  type MedAttrFilters,
+} from '../components/MedAttrFilters';
 import { FilterChip, SearchField, SegmentedControl } from '../components/controls';
 import { Breathe, CountUp } from '../components/motion';
 import { ArreteResult, FavoriteTile, LibraryCard, MedResult } from '../components/SearchResults';
@@ -27,13 +23,21 @@ import {
   glow,
   heroGradient,
   momentOfDay,
-  MOMENT_GREETING,
   radii,
   shadow,
   spacing,
   typography,
 } from '../theme';
 import type { ArreteItem, BdpmMedicament, DomaineId } from '../types';
+import { Ionicons } from '@expo/vector-icons';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Nav = CompositeNavigationProp<
   NativeStackNavigationProp<AccueilStackParamList, 'AccueilHome'>,
@@ -66,6 +70,7 @@ export function HomeScreen() {
   const contentUpdate = useContentUpdateContext();
   const [query, setQuery] = useState('');
   const [filtre, setFiltre] = useState<Filtre>('tout');
+  const [medAttrs, setMedAttrs] = useState<MedAttrFilters>({});
   const [loading, setLoading] = useState(false);
   const [arrete, setArrete] = useState<ArreteItem[]>([]);
   const [meds, setMeds] = useState<BdpmMedicament[]>([]);
@@ -74,6 +79,8 @@ export function HomeScreen() {
   const moment = useMemo(() => momentOfDay(), []);
 
   const active = query.trim().length >= 2;
+  const medAttrCount = countActiveMedAttrs(medAttrs);
+  const showMedFilters = active && filtre !== 'arrete';
 
   useEffect(() => {
     getMedicationStats()
@@ -91,7 +98,8 @@ export function HomeScreen() {
     setLoading(true);
     const timer = setTimeout(() => {
       const term = query.trim();
-      Promise.all([searchArrete(term), searchMedicaments(term)])
+      const medOpts = medAttrToQuery(medAttrs);
+      Promise.all([searchArrete(term), searchMedicaments(term, medOpts)])
         .then(([a, m]) => {
           setArrete(a);
           setMeds(m);
@@ -103,7 +111,7 @@ export function HomeScreen() {
         .finally(() => setLoading(false));
     }, 220);
     return () => clearTimeout(timer);
-  }, [query, active]);
+  }, [query, active, medAttrs]);
 
   const rows = useMemo<Row[]>(() => {
     const a: Row[] = arrete.map((item) => ({ kind: 'arrete', item }));
@@ -134,13 +142,11 @@ export function HomeScreen() {
 
         <View style={styles.heroTop}>
           <View style={styles.heroTitles}>
-            <Text style={styles.kicker}>{MOMENT_GREETING[moment]}</Text>
             <Text style={styles.brand}>
               <Text style={styles.brandAccent}>Infi</Text>
               <Text style={styles.brandMain}>check</Text>
             </Text>
           </View>
-          <MenuButton />
         </View>
 
         <SearchField
@@ -168,7 +174,7 @@ export function HomeScreen() {
         keyExtractor={(row) => `${row.kind}-${row.item.id}`}
         ListHeaderComponent={
           active ? (
-            <Animated.View entering={FadeIn.duration(200)}>
+            <Animated.View entering={FadeIn.duration(200)} style={styles.searchHeader}>
               <SegmentedControl
                 value={filtre}
                 onChange={setFiltre}
@@ -178,6 +184,23 @@ export function HomeScreen() {
                   { value: 'meds', label: 'BDPM', count: meds.length },
                 ]}
               />
+              {showMedFilters ? (
+                <View style={styles.medFilters}>
+                  <View style={styles.medFiltersHead}>
+                    <Text style={styles.medFiltersLabel}>Filtres médicaments</Text>
+                    {medAttrCount > 0 ? (
+                      <PressableScale
+                        accessibilityLabel="Réinitialiser les filtres médicaments"
+                        onPress={() => setMedAttrs({})}
+                        scaleTo={0.95}
+                      >
+                        <Text style={styles.medFiltersReset}>Réinitialiser</Text>
+                      </PressableScale>
+                    ) : null}
+                  </View>
+                  <MedAttrFilterChips value={medAttrs} onChange={setMedAttrs} />
+                </View>
+              ) : null}
             </Animated.View>
           ) : (
             <IdleHome
@@ -208,7 +231,11 @@ export function HomeScreen() {
             <EmptyState
               icon="search-outline"
               title="Aucun résultat"
-              body={`Rien pour « ${query.trim()} ». Essayez une DCI, un nom commercial ou un mot de l’arrêté.`}
+              body={
+                medAttrCount > 0
+                  ? `Rien pour « ${query.trim()} » avec ces filtres. Élargissez les filtres BDPM.`
+                  : `Rien pour « ${query.trim()} ». Essayez une DCI, un nom commercial ou un mot de l’arrêté.`
+              }
             />
           )
         }
@@ -481,7 +508,6 @@ const styles = StyleSheet.create({
   },
   heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   heroTitles: { gap: 1 },
-  kicker: { ...typography.micro, color: colors.onDarkSoft, letterSpacing: 1.1 },
   brand: { fontSize: 24, fontWeight: '800', letterSpacing: -0.6, lineHeight: 28 },
   brandAccent: { color: '#EDB395' },
   brandMain: { color: colors.white },
@@ -489,6 +515,15 @@ const styles = StyleSheet.create({
   heroFootText: { color: colors.onDarkSoft, fontSize: 11.5, fontWeight: '700' },
   list: { flex: 1 },
   content: { padding: spacing.md, gap: spacing.sm, paddingBottom: TAB_BAR_CLEARANCE },
+  searchHeader: { gap: spacing.sm },
+  medFilters: { gap: 6 },
+  medFiltersHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  medFiltersLabel: { ...typography.caption, color: colors.muted, fontWeight: '700' },
+  medFiltersReset: { color: colors.accent, fontSize: 12.5, fontWeight: '800' },
   idle: { gap: spacing.lg },
   block: { gap: spacing.sm },
   /** Marge négative : les rails touchent les bords de l'écran, la liste garde son padding. */

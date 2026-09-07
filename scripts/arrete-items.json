@@ -2,9 +2,10 @@
   {
     "id": "vac-calendrier",
     "domaine": "I",
-    "titre": "Vaccins du calendrier des vaccinations",
-    "description": "Prescription de l’ensemble des vaccins du calendrier des vaccinations en vigueur, selon les recommandations de ce calendrier.",
+    "titre": "Vaccins du calendrier",
+    "description": "Prescrire les vaccins du calendrier vaccinal, selon les recommandations en vigueur.",
     "modalite": "prescrire",
+    "categorie": "medicament",
     "conditions": [
       "À qui : personnes âgées de 11 ans et plus",
       "Prescrire : tous les vaccins mentionnés au calendrier vaccinal en vigueur, selon ses recommandations (schéma, rappels, populations cibles)",
@@ -20,14 +21,17 @@
       "Inscription au dossier patient ou DMP (Art. 2)"
     ],
     "references": "Art. 1-I · Annexe I",
-    "bdpmKeywords": ["vaccin"]
+    "bdpmKeywords": [
+      "vaccin"
+    ]
   },
   {
     "id": "vac-grippe",
     "domaine": "I",
-    "titre": "Vaccin grippe saisonnière",
-    "description": "Prescription des vaccins contre la grippe saisonnière, y compris hors populations ciblées par les recommandations.",
+    "titre": "Vaccin grippe",
+    "description": "Prescrire le vaccin contre la grippe (y compris hors populations ciblées).",
     "modalite": "prescrire",
+    "categorie": "medicament",
     "conditions": [
       "À qui : personnes âgées de 11 ans et plus — ciblées ou non ciblées par les recommandations vaccinales",
       "Prescrire : vaccin contre la grippe saisonnière (1re intention)",
@@ -40,14 +44,18 @@
       "Inscription au dossier patient ou DMP (Art. 2)"
     ],
     "references": "Art. 1-I · Annexe I",
-    "bdpmKeywords": ["grippe", "influenza"]
+    "bdpmKeywords": [
+      "grippe",
+      "influenza"
+    ]
   },
   {
     "id": "vac-covid",
     "domaine": "I",
-    "titre": "Vaccin Covid-19",
-    "description": "Prescription des vaccins contre la Covid-19, y compris hors populations ciblées par les recommandations.",
+    "titre": "Vaccin Covid",
+    "description": "Prescrire le vaccin Covid (y compris hors populations ciblées).",
     "modalite": "prescrire",
+    "categorie": "medicament",
     "conditions": [
       "À qui : personnes âgées de 5 ans et plus — ciblées ou non ciblées par les recommandations vaccinales",
       "Prescrire : vaccin contre la Covid-19 (1re intention)",
@@ -60,14 +68,18 @@
       "Inscription au dossier patient ou DMP (Art. 2)"
     ],
     "references": "Art. 1-I · Annexe I",
-    "bdpmKeywords": ["covid", "sars-cov"]
+    "bdpmKeywords": [
+      "covid",
+      "sars-cov"
+    ]
   },
   {
     "id": "plaie-supports",
     "domaine": "II",
-    "titre": "Supports d’aide anti-escarre",
-    "description": "Prescription et renouvellement des supports d’aide à la prévention et au traitement d’escarre.",
+    "titre": "Matelas et coussins anti-escarre",
+    "description": "Prescrire ou renouveler matelas, sur-matelas, coussins et cales anti-escarre.",
     "modalite": "les_deux",
+    "categorie": "dm",
     "conditions": [
       "À qui : patient relevant de la prévention ou du traitement d’une plaie / escarre. Pas de restriction d’âge dans l’arrêté",
       "Prescrire et renouveler : matelas, sur-matelas, coussins, cales",
@@ -84,9 +96,10 @@
   {
     "id": "plaie-contention",
     "domaine": "II",
-    "titre": "Contention (cadre plaie)",
-    "description": "Collants, bas, chaussettes ou bandes de contention, uniquement dans le cadre de la prévention ou du traitement de la plaie.",
+    "titre": "Bas et bandes (pour une plaie)",
+    "description": "Bas, collants, chaussettes ou bandes — uniquement dans le cadre d’une plaie, force à l’identique.",
     "modalite": "les_deux",
+    "categorie": "dm",
     "conditions": [
       "À qui : patient dans le cadre de la prévention ou du traitement d’une plaie — pas la contention veineuse « de ville » hors plaie",
       "Prescrire et renouveler : collants, bas, chaussettes ou bandes de contention",
@@ -103,9 +116,10 @@
   {
     "id": "plaie-pansements",
     "domaine": "II",
-    "titre": "Pansements et matériel pour pansements",
-    "description": "Prescription de pansements et d’articles pour pansements, pour une durée initiale de sept jours, liste fermée de l’Art. 1-II.",
+    "titre": "Pansements (pour 7 jours)",
+    "description": "Prescrire les pansements autorisés, pour 7 jours maximum au départ.",
     "modalite": "prescrire",
+    "categorie": "dm",
     "conditions": [
       "À qui : patient nécessitant un pansement dans le cadre de la prévention ou du traitement de la plaie. Pas de restriction d’âge dans l’arrêté",
       "Prescrire (1re intention) : uniquement les produits de la liste a à v (voir exemples sur cette fiche)",
@@ -122,9 +136,10 @@
   {
     "id": "plaie-antiseptiques",
     "domaine": "II",
-    "titre": "Antiseptiques à large spectre (plaie)",
-    "description": "Prescription d’antiseptiques à large spectre, uniquement dans un cadre très restreint de plaie récente.",
+    "titre": "Antiseptique sur plaie récente",
+    "description": "Antiseptique sans antibiotique : seulement brûlure ou plaie souillée, dans les 5 premiers jours (pas le pied diabétique).",
     "modalite": "prescrire",
+    "categorie": "medicament",
     "conditions": [
       "À qui : plaie par brûlure, ou plaie traumatique avec souillures — dans les 5 premiers jours après l’apparition",
       "Prescrire : antiseptique à large spectre, sans antibiotique",
@@ -137,14 +152,17 @@
       "Inscription au dossier patient ou DMP (Art. 2)"
     ],
     "references": "Art. 1-II-c",
-    "bdpmKeywords": ["antiseptique"]
+    "bdpmKeywords": [
+      "antiseptique"
+    ]
   },
   {
     "id": "plaie-sprays",
     "domaine": "II",
-    "titre": "Sprays protecteurs cutanés",
-    "description": "Prescription de sprays protecteurs cutanés nécessaires à la prévention ou au traitement de la plaie.",
+    "titre": "Spray pour protéger la peau",
+    "description": "Spray pour protéger la peau autour d’une plaie.",
     "modalite": "prescrire",
+    "categorie": "medicament",
     "conditions": [
       "À qui : patient dans le cadre de la prévention ou du traitement de la plaie. Pas de restriction d’âge dans l’arrêté",
       "Prescrire (1re intention) : sprays protecteurs cutanés",
@@ -159,9 +177,10 @@
   {
     "id": "plaie-anesthesiques",
     "domaine": "II",
-    "titre": "Anesthésiques locaux (hors injectable)",
-    "description": "Prescription d’anesthésiques locaux, toute forme galénique sauf injectable, pour la prévention ou le traitement de la plaie.",
+    "titre": "Anesthésiant local (crème, gel…)",
+    "description": "Crème, gel, patch ou spray anesthésiant — pas d’injectable.",
     "modalite": "prescrire",
+    "categorie": "medicament",
     "conditions": [
       "À qui : patient dans le cadre de la prévention ou du traitement de la plaie. Pas de restriction d’âge dans l’arrêté",
       "Prescrire : anesthésique local (crème, gel, patch, spray…)",
@@ -172,14 +191,18 @@
       "Inscription au dossier patient ou DMP (Art. 2)"
     ],
     "references": "Art. 1-II (produits de santé b)",
-    "bdpmKeywords": ["lidocaïne", "anesthesique"]
+    "bdpmKeywords": [
+      "lidocaïne",
+      "anesthesique"
+    ]
   },
   {
     "id": "plaie-nitrate",
     "domaine": "II",
-    "titre": "Nitrate d’argent (hyperbourgeonnement)",
-    "description": "Prescription de nitrate d’argent à faible dosage, uniquement en cas d’hyperbourgeonnement.",
+    "titre": "Nitrate d’argent (bourgeonnement)",
+    "description": "Nitrate d’argent à faible dose, seulement si la plaie bourgeonne trop.",
     "modalite": "prescrire",
+    "categorie": "medicament",
     "conditions": [
       "À qui : patient avec hyperbourgeonnement d’une plaie",
       "Prescrire : nitrate d’argent à faible dosage",
@@ -194,9 +217,10 @@
   {
     "id": "sex-contraception-orale",
     "domaine": "III",
-    "titre": "Renouvellement contraceptifs oraux",
-    "description": "Renouvellement d’une contraception orale déjà prescrite, pour 6 mois maximum, selon l’Annexe II.",
+    "titre": "Renouveler la pilule",
+    "description": "Renouveler une pilule déjà prescrite, jusqu’à 6 mois, avec les mentions Annexe II.",
     "modalite": "renouveler",
+    "categorie": "medicament",
     "conditions": [
       "À qui : personne déjà sous contraceptif oral, avec une ordonnance médicale datant de moins d’un an",
       "Renouveler uniquement — pas de 1re prescription de pilule au titre de cet alinéa",
@@ -212,14 +236,19 @@
       "Inscription au dossier patient ou DMP (Art. 2)"
     ],
     "references": "Art. 1-III · Annexe II",
-    "bdpmKeywords": ["contraceptif", "levonorgestrel", "desogestrel"]
+    "bdpmKeywords": [
+      "contraceptif",
+      "levonorgestrel",
+      "desogestrel"
+    ]
   },
   {
     "id": "sex-urgence",
     "domaine": "III",
-    "titre": "Contraceptifs d’urgence",
-    "description": "Prescription de contraceptifs d’urgence (1re intention).",
+    "titre": "Contraception d’urgence",
+    "description": "Prescrire une contraception d’urgence (pilule du lendemain / ulipristal).",
     "modalite": "prescrire",
+    "categorie": "medicament",
     "conditions": [
       "À qui : toute personne concernée — l’Art. 1-III ne pose ni âge, ni sexe, ni durée",
       "Prescrire (1re intention) : contraceptif d’urgence",
@@ -230,14 +259,19 @@
       "Inscription au dossier patient ou DMP (Art. 2)"
     ],
     "references": "Art. 1-III",
-    "bdpmKeywords": ["levonorgestrel", "ulipristal", "urgence"]
+    "bdpmKeywords": [
+      "levonorgestrel",
+      "ulipristal",
+      "urgence"
+    ]
   },
   {
     "id": "sex-preservatifs",
     "domaine": "III",
     "titre": "Préservatifs",
-    "description": "Prescription de préservatifs (1re intention).",
+    "description": "Prescrire des préservatifs.",
     "modalite": "prescrire",
+    "categorie": "dm",
     "conditions": [
       "À qui : toute personne — l’Art. 1-III ne pose ni âge, ni sexe, ni quantité",
       "Prescrire (1re intention) : préservatifs",
@@ -252,9 +286,10 @@
   {
     "id": "sex-bhcg",
     "domaine": "III",
-    "titre": "Dosage β-HCG",
-    "description": "Prescription du dosage de bêta-HCG, uniquement pour confirmer et dater une grossesse.",
+    "titre": "Test de grossesse (β-HCG)",
+    "description": "Prescrire un dosage sanguin β-HCG (confirmation / datation de grossesse).",
     "modalite": "prescrire",
+    "categorie": "examen",
     "conditions": [
       "À qui : personne pour laquelle une grossesse doit être confirmée et datée",
       "Prescrire : dosage β-HCG (1re intention)",
@@ -270,9 +305,10 @@
   {
     "id": "sex-ist",
     "domaine": "III",
-    "titre": "Tests de dépistage IST",
-    "description": "Prescription des tests de dépistage limitativement énumérés par l’arrêté.",
+    "titre": "Dépistages IST",
+    "description": "Prescrire les tests de dépistage IST prévus par l’arrêté.",
     "modalite": "prescrire",
+    "categorie": "examen",
     "conditions": [
       "À qui : personne pour laquelle un dépistage de ces infections est indiqué. Pas de restriction d’âge dans l’arrêté",
       "Prescrire (1re intention), liste fermée : VIH ; hépatites B et C ; syphilis ; chlamydia ; gonocoque",
@@ -287,9 +323,10 @@
   {
     "id": "tabac-substituts",
     "domaine": "IV",
-    "titre": "Substituts nicotiniques",
-    "description": "Prescription de substituts nicotiniques dans le cadre du sevrage tabagique.",
+    "titre": "Patch, gomme, pastille nicotine",
+    "description": "Prescrire patch, gomme, pastille, inhalateur ou spray nicotine pour arrêter de fumer.",
     "modalite": "prescrire",
+    "categorie": "medicament",
     "conditions": [
       "À qui : personne en sevrage tabagique. Pas de restriction d’âge dans l’arrêté",
       "Prescrire (1re intention) : substituts nicotiniques (patch, gomme, pastille, inhalateur, spray…)",
@@ -300,14 +337,18 @@
       "Inscription au dossier patient ou DMP (Art. 2)"
     ],
     "references": "Art. 1-IV",
-    "bdpmKeywords": ["nicotine", "substitut"]
+    "bdpmKeywords": [
+      "nicotine",
+      "substitut"
+    ]
   },
   {
     "id": "tabac-bilan",
     "domaine": "IV",
-    "titre": "Bilan sanguin facteurs de risque CV",
-    "description": "Prescription d’un bilan limité à trois examens, pour évaluer les facteurs de risque cardiovasculaires dans le sevrage tabagique.",
+    "titre": "Bilan sanguin (arrêt du tabac)",
+    "description": "Prescrire cholestérol, triglycérides et glycémie à jeun dans le cadre de l’arrêt du tabac.",
     "modalite": "prescrire",
+    "categorie": "examen",
     "conditions": [
       "À qui : personne suivie dans le cadre du sevrage tabagique, pour évaluer les facteurs de risques biologiques cardiovasculaires",
       "Prescrire (1re intention), liste fermée : cholestérol ; triglycérides ; glycémie à jeun",
@@ -322,9 +363,10 @@
   {
     "id": "prod-antalgiques",
     "domaine": "V",
-    "titre": "Antalgiques de palier I (OMS)",
-    "description": "Prescription d’antalgiques de palier I, y compris comme antipyrétiques.",
+    "titre": "Antidouleurs simples (palier I)",
+    "description": "Prescrire un antidouleur de palier I (paracétamol, ibuprofène, aspirine…), y compris contre la fièvre.",
     "modalite": "prescrire",
+    "categorie": "medicament",
     "conditions": [
       "À qui : patient nécessitant un antalgique de palier I ou un antipyrétique. Pas de restriction d’âge dans l’arrêté — respecter l’AMM (formes pédiatriques, contre-indications)",
       "Prescrire (1re intention) : palier I OMS uniquement (paracétamol, ibuprofène, aspirine… selon AMM)",
@@ -336,14 +378,20 @@
       "Inscription au dossier patient ou DMP (Art. 2)"
     ],
     "references": "Art. 1-V-1",
-    "bdpmKeywords": ["paracetamol", "paracétamol", "ibuprofene", "ibuprofène"]
+    "bdpmKeywords": [
+      "paracetamol",
+      "paracétamol",
+      "ibuprofene",
+      "ibuprofène"
+    ]
   },
   {
     "id": "prod-adaptation-douleur",
     "domaine": "V",
-    "titre": "Adaptation de posologie (douleur)",
-    "description": "Adaptation des posologies déjà prévues par une prescription initiale, uniquement dans la prise en charge de la douleur.",
+    "titre": "Adapter un antidouleur déjà prescrit",
+    "description": "Ajuster les doses d’un antidouleur déjà prescrit par le médecin — sans changer de médicament.",
     "modalite": "renouveler",
+    "categorie": "medicament",
     "conditions": [
       "À qui : patient déjà sous prescription médicale pour la douleur",
       "Pas une 1re prescription d’un nouveau médicament : vous n’adaptez que selon les indications déjà écrites sur l’ordonnance initiale",
@@ -360,9 +408,10 @@
   {
     "id": "prod-solutions",
     "domaine": "V",
-    "titre": "Solutions stériles et antiseptiques",
-    "description": "Prescription de solutions stériles, de produits antiseptiques, et de sérum physiologique à prescription médicale facultative.",
+    "titre": "Sérum physio et antiseptiques",
+    "description": "Prescrire sérum physiologique, solutions stériles ou antiseptiques.",
     "modalite": "prescrire",
+    "categorie": "medicament",
     "conditions": [
       "À qui : patient nécessitant une solution stérile, un antiseptique ou du sérum physiologique. Pas de restriction d’âge dans l’arrêté",
       "Prescrire (1re intention) : solutions stériles et produits antiseptiques",
@@ -373,14 +422,19 @@
       "Inscription au dossier patient ou DMP (Art. 2)"
     ],
     "references": "Art. 1-V-2",
-    "bdpmKeywords": ["serum", "sérum", "nacl"]
+    "bdpmKeywords": [
+      "serum",
+      "sérum",
+      "nacl"
+    ]
   },
   {
     "id": "prod-dm-incontinence",
     "domaine": "V",
-    "titre": "DM incontinence / urogénital / stomies",
-    "description": "Prescription et renouvellement du matériel d’incontinence, urogénital et de stomie ; sondes à demeure : renouvellement uniquement.",
+    "titre": "Incontinence, sondes et stomies",
+    "description": "Prescrire ou renouveler le matériel d’incontinence, de stomie et de sondage (sonde à demeure : renouvellement seulement).",
     "modalite": "les_deux",
+    "categorie": "dm",
     "conditions": [
       "À qui : patient nécessitant du matériel d’incontinence, urogénital ou de stomie. Pas de restriction d’âge dans l’arrêté",
       "Prescrire et renouveler : étui pénien, joint, raccord ; plat bassin / urinal ; poches et accessoires (incontinents urinaires, fécaux, stomisés : raccord, filtre, tampon, supports, ceinture, clamp, pâte péristomiale, tampon absorbant, bouchon, collecteurs) ; irrigation colique ; sondes vésicales pour autosondage et hétérosondage",
@@ -397,9 +451,10 @@
   {
     "id": "prod-aides-techniques",
     "domaine": "V",
-    "titre": "Cerceaux, béquilles, cannes, soulève-malade",
-    "description": "Prescription et renouvellement de cerceaux de lit, location de béquilles et cannes, soulève-malade mécanique ou électrique.",
+    "titre": "Béquilles, cannes, soulève-malade",
+    "description": "Prescrire ou renouveler cerceau de lit, location de béquilles/cannes, soulève-malade.",
     "modalite": "les_deux",
+    "categorie": "dm",
     "conditions": [
       "À qui : tout patient pour lequel ce matériel d’aide / de prévention est nécessaire. Pas de restriction d’âge ni de pathologie dans l’arrêté",
       "Prescrire (1re intention) ET renouveler",
@@ -418,9 +473,10 @@
   {
     "id": "prod-perfusion",
     "domaine": "V",
-    "titre": "Perfusion à domicile",
-    "description": "Prescription et renouvellement des dispositifs de perfusion à domicile : appareils, accessoires (bras, CCI, cathéter central / PICC), entretien / rinçage, pieds et potences à sérum.",
+    "titre": "Matériel de perfusion à domicile",
+    "description": "Prescrire ou renouveler le matériel de perfusion à domicile (pas la pose du cathéter).",
     "modalite": "les_deux",
+    "categorie": "dm",
     "conditions": [
       "À qui : patient en perfusion à domicile. Pas de restriction d’âge dans l’arrêté. Le produit perfusé n’est autorisé que s’il figure ailleurs dans la liste (ex. palier I)",
       "Prescrire (1re intention) ET renouveler le matériel listé — pas la pose de la CCI / du cathéter (acte distinct)",
@@ -441,9 +497,10 @@
   {
     "id": "prod-nutrition-enterale",
     "domaine": "V",
-    "titre": "Nutrition entérale à domicile",
-    "description": "Sonde naso-gastrique ou naso-entérale (prescription) et renouvellement du matériel de nutrition entérale, pour un patient nourri à domicile.",
+    "titre": "Sonde et nutrition à domicile",
+    "description": "Prescrire une sonde, ou renouveler sonde et tubulures pour la nutrition à domicile (pas le produit nutritif).",
     "modalite": "les_deux",
+    "categorie": "dm",
     "conditions": [
       "À qui : patient en nutrition entérale à domicile. Pas de restriction d’âge dans l’arrêté",
       "Prescrire (1re intention) : sonde naso-gastrique ou naso-entérale uniquement",
@@ -461,9 +518,10 @@
   {
     "id": "prod-ortheses-membres",
     "domaine": "V",
-    "titre": "Orthèses élastiques de contention (membres)",
-    "description": "Renouvellement à l’identique des orthèses élastiques de contention des membres : bas (jambe, cuisse), chaussettes et suppléments associés.",
+    "titre": "Renouveler les bas de contention",
+    "description": "Renouveler bas ou chaussettes de contention à l’identique (pas de 1re prescription ici).",
     "modalite": "renouveler",
+    "categorie": "dm",
     "conditions": [
       "À qui : patient déjà équipé — une prescription médicale initiale doit exister. Pas de 1re prescription au titre de cet alinéa",
       "Renouvellement à l’identique uniquement (même type, même force que l’ordonnance initiale)",
@@ -481,9 +539,10 @@
   {
     "id": "prod-glycemie",
     "domaine": "V",
-    "titre": "Matériel surveillance glycémique",
-    "description": "Renouvellement à l’identique du matériel d’autosurveillance glycémique et de ses accessoires.",
+    "titre": "Bandelettes, lancettes, capteurs",
+    "description": "Renouveler à l’identique bandelettes, lancettes, aiguilles ou capteurs déjà prescrits.",
     "modalite": "renouveler",
+    "categorie": "dm",
     "conditions": [
       "À qui : patient déjà équipé (prescription médicale initiale). Pas de 1re mise sous lecteur / capteur au titre de cet alinéa",
       "Renouveler à l’identique uniquement (même type de matériel)",
@@ -500,9 +559,10 @@
   {
     "id": "bio-inr",
     "domaine": "VI",
-    "titre": "INR (traitement AVK)",
-    "description": "Renouvellement du dosage de l’INR chez un patient sous antivitamine K.",
+    "titre": "INR (sous AVK)",
+    "description": "Renouveler un INR chez un patient sous AVK (pas les anticoagulants type Eliquis / Xarelto).",
     "modalite": "renouveler",
+    "categorie": "examen",
     "conditions": [
       "À qui : patient déjà sous traitement antivitamine K (AVK), avec un INR déjà prescrit",
       "Renouveler une fois le dosage de l’INR — pas une 1re prescription d’INR au titre de cet alinéa",
@@ -519,8 +579,9 @@
     "id": "bio-nfs",
     "domaine": "VI",
     "titre": "NFS, plaquettes, ionogramme",
-    "description": "Prescription de NFS, plaquettes et ionogramme sanguin, si pathologie connue ou symptômes évocateurs.",
+    "description": "Prescrire NFS, plaquettes ou ionogramme si pathologie connue ou symptômes évocateurs.",
     "modalite": "prescrire",
+    "categorie": "examen",
     "conditions": [
       "À qui : patient avec une pathologie connue, OU des symptômes évocateurs d’une pathologie. Pas de restriction d’âge dans l’arrêté",
       "Prescrire (1re intention), liste fermée : NFS ; plaquettes ; ionogramme sanguin",
@@ -536,9 +597,10 @@
   {
     "id": "bio-ecbu",
     "domaine": "VI",
-    "titre": "ECBU (± antibiogramme)",
-    "description": "Prescription d’un ECBU, avec antibiogramme seulement si nécessaire.",
+    "titre": "ECBU (analyse d’urine)",
+    "description": "Prescrire un ECBU ; antibiogramme seulement si besoin (pas l’antibiotique).",
     "modalite": "prescrire",
+    "categorie": "examen",
     "conditions": [
       "À qui : patient pour lequel un examen des urines est indiqué. Pas de restriction d’âge ni de sexe dans l’arrêté",
       "Prescrire (1re intention) : ECBU",
@@ -554,9 +616,10 @@
   {
     "id": "bio-glycemie",
     "domaine": "VI",
-    "titre": "Glycémie (examen de labo)",
-    "description": "Prescription d’une glycémie à jeun, ou d’une glycémie en urgence en cas de déséquilibre du diabète et d’hypoglycémie.",
+    "titre": "Glycémie au laboratoire",
+    "description": "Prescrire une glycémie à jeun, ou en urgence si diabète déséquilibré avec hypoglycémie.",
     "modalite": "prescrire",
+    "categorie": "examen",
     "conditions": [
       "À qui — cas 1 : glycémie à jeun (l’arrêté ne limite pas à un patient déjà diabétique)",
       "À qui — cas 2 : glycémie en urgence si déséquilibre du diabète ET hypoglycémie",
@@ -572,9 +635,10 @@
   {
     "id": "bio-diabete",
     "domaine": "VI",
-    "titre": "Créatininémie, albuminurie/créatininurie, HbA1c",
-    "description": "Prescription de trois examens de suivi, uniquement chez un diabétique connu et s’ils n’ont pas été prescrits dans les 3 derniers mois.",
+    "titre": "Suivi diabète (rein + HbA1c)",
+    "description": "Chez un diabétique connu : créatinine, albuminurie et HbA1c si pas faits depuis 3 mois.",
     "modalite": "prescrire",
+    "categorie": "examen",
     "conditions": [
       "À qui : patient diabétique connu uniquement — pas un dépistage du diabète au titre de cet alinéa",
       "Prescrire : créatininémie ; rapport albuminurie/créatininurie sur échantillon ; HbA1c",

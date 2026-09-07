@@ -51,11 +51,3 @@ export async function acceptDisclaimer(): Promise<DisclaimerAcceptance> {
   }
   return acceptance;
 }
-
-export async function resetDisclaimer(): Promise<void> {
-  try {
-    await AsyncStorage.removeItem(KEY_DISCLAIMER);
-  } catch {
-    // Ignoré volontairement.
-  }
-}

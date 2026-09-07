@@ -44,7 +44,9 @@ export function SearchField({
       [0, 1],
       onDark ? ['rgba(255,255,255,0.28)', 'rgba(255,255,255,0.7)'] : [colors.border, accent],
     ),
-    shadowOpacity: interpolate(focus.value, [0, 1], [0.06, 0.16]),
+    boxShadow: onDark
+      ? 'none'
+      : `0px 4px 14px rgba(61, 81, 64, ${interpolate(focus.value, [0, 1], [0.06, 0.16])})`,
   }));
 
   const iconAnimated = useAnimatedStyle(() => ({
@@ -306,15 +308,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 4,
     height: 52,
-    shadowColor: '#3D5140',
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 14,
-    elevation: 3,
   },
   searchWrapOnDark: {
     backgroundColor: 'rgba(255,255,255,0.14)',
-    shadowOpacity: 0,
-    elevation: 0,
   },
   searchInput: { flex: 1, fontSize: 16, color: colors.ink, paddingVertical: 0 },
   searchInputOnDark: { color: colors.white },

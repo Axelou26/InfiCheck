@@ -2,6 +2,8 @@ import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
+import { toContentVersionKey } from '../content/version';
+import { ARRETE_ITEMS } from '../data/arreteCatalog';
 import type {
   ArreteItem,
   BdpmAvisHas,
@@ -14,10 +16,13 @@ import type {
   BdpmPresentation,
   BdpmRupture,
   DomaineId,
+  ItemCategorie,
   Modalite,
   NiveauIde,
 } from '../types';
 import { extractNomCommercial, parseTauxAgg } from '../utils/medicament';
+
+const CATEGORIE_BY_ID = new Map(ARRETE_ITEMS.map((item) => [item.id, item.categorie]));
 
 const DB_NAME = 'inficheck.db';
 const VERSION_FILE = 'inficheck.content-version';
@@ -36,7 +41,7 @@ let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 let openDb: SQLite.SQLiteDatabase | null = null;
 
 function bundledContentVersionKey(): string {
-  return `${BUNDLED_META.importedAt}+${BUNDLED_META.catalogVersion ?? '0'}`;
+  return toContentVersionKey(BUNDLED_META.importedAt, BUNDLED_META.catalogVersion ?? '0');
 }
 
 export function getBundledContentMeta() {
@@ -143,29 +148,54 @@ async function ensureBundledDatabaseNative() {
 }
 
 async function getDb() {
-  if (!dbPromise) {
-    dbPromise = (async () => {
-      // Web : pas de FileSystem natif → désérialisation en mémoire
-      if (Platform.OS === 'web') {
-        const bytes = await loadBundledDbBytes();
-        const db = await SQLite.deserializeDatabaseAsync(bytes);
-        openDb = db;
-        return db;
+  if (dbPromise) return dbPromise;
+
+  dbPromise = (async () => {
+    // Web : pas de FileSystem natif → désérialisation en mémoire (OPFS).
+    // Un handle déjà ouvert (hot reload, 2 onglets, Strict Mode) provoque
+    // NoModificationAllowedError — on ferme d'abord s'il reste une connexion.
+    if (Platform.OS === 'web') {
+      if (openDb) {
+        await openDb.closeAsync().catch(() => undefined);
+        openDb = null;
       }
-      await ensureBundledDatabaseNative();
-      const db = await SQLite.openDatabaseAsync(DB_NAME);
+      const bytes = await loadBundledDbBytes();
+      const db = await SQLite.deserializeDatabaseAsync(bytes);
       openDb = db;
       return db;
-    })();
-  }
+    }
+    await ensureBundledDatabaseNative();
+    const db = await SQLite.openDatabaseAsync(DB_NAME);
+    openDb = db;
+    return db;
+  })().catch((error) => {
+    // Laisse « Réessayer » repartir sur une nouvelle ouverture.
+    dbPromise = null;
+    openDb = null;
+    throw error;
+  });
+
   return dbPromise;
 }
 
 export async function initDatabase() {
-  const db = await getDb();
-  const count = await db.getFirstAsync<{ c: number }>('SELECT COUNT(*) as c FROM medicaments');
-  if (!count || count.c < 1000) {
-    throw new Error('Base médicaments invalide ou incomplète');
+  try {
+    const db = await getDb();
+    const count = await db.getFirstAsync<{ c: number }>('SELECT COUNT(*) as c FROM medicaments');
+    if (!count || count.c < 1000) {
+      throw new Error('Base médicaments invalide ou incomplète');
+    }
+  } catch (error) {
+    if (
+      Platform.OS === 'web' &&
+      error instanceof Error &&
+      /Access Handle|NoModificationAllowed|createSyncAccessHandle/i.test(error.message)
+    ) {
+      throw new Error(
+        'Base web verrouillée (autre onglet ou rechargement). Ferme les autres onglets Inficheck, recharge la page, ou ouvre l’app dans Expo Go sur le téléphone.',
+      );
+    }
+    throw error;
   }
 }
 
@@ -223,12 +253,14 @@ type ArreteRow = {
 };
 
 function mapArrete(row: ArreteRow): ArreteItem {
+  const categorie: ItemCategorie = CATEGORIE_BY_ID.get(row.id) ?? 'medicament';
   return {
     id: row.id,
     domaine: row.domaine,
     titre: row.titre,
     description: row.description,
     modalite: row.modalite,
+    categorie,
     conditions: JSON.parse(row.conditions_json) as string[],
     obligations: JSON.parse(row.obligations_json) as string[],
     references: row.references_txt,
@@ -342,8 +374,30 @@ export async function searchArrete(query: string): Promise<ArreteItem[]> {
   return rows.map(mapArrete);
 }
 
-/** `null` = tous les niveaux. `liste` = oui + sous conditions. Le niveau `non` couvre aussi les lignes sans valeur. */
-function niveauClause(niveau: NiveauIde | 'liste' | null): string {
+/** `null` / omis = tous les niveaux. `liste` = oui + sous conditions. */
+export type MedQueryOptions = {
+  niveau?: NiveauIde | 'liste' | null;
+  remboursable?: boolean;
+  generique?: boolean;
+  princeps?: boolean;
+  commercialise?: boolean;
+  mitm?: boolean;
+  infoImportante?: boolean;
+  surveillanceRenforcee?: boolean;
+  tensionDispo?: boolean;
+};
+
+/** Taux max d’une spécialité (100 → 65 → 30…), pour tri décroissant. */
+const TAUX_MAX_EXPR = `COALESCE((
+  SELECT MAX(
+    CAST(REPLACE(REPLACE(TRIM(p.taux_remboursement), ' ', ''), '%', '') AS REAL)
+  )
+  FROM presentations p
+  WHERE p.cis = m.cis
+    AND TRIM(IFNULL(p.taux_remboursement, '')) != ''
+), -1)`;
+
+function niveauClause(niveau: NiveauIde | 'liste' | null | undefined): string {
   if (!niveau) return '';
   if (niveau === 'liste') {
     return `AND m.niveau_ide IN ('oui', 'conditions')`;
@@ -354,18 +408,75 @@ function niveauClause(niveau: NiveauIde | 'liste' | null): string {
   return `AND m.niveau_ide = '${niveau}'`;
 }
 
+function medFilterClauses(opts: MedQueryOptions = {}): string {
+  const parts: string[] = [niveauClause(opts.niveau)];
+  if (opts.remboursable) {
+    parts.push(`AND EXISTS (
+      SELECT 1 FROM presentations p
+      WHERE p.cis = m.cis AND TRIM(IFNULL(p.taux_remboursement, '')) != ''
+    )`);
+  }
+  if (opts.generique) {
+    parts.push(`AND EXISTS (
+      SELECT 1 FROM generiques g
+      WHERE g.cis = m.cis AND g.type_code IN ('1', '2', '4')
+    )`);
+  }
+  if (opts.princeps) {
+    parts.push(`AND EXISTS (
+      SELECT 1 FROM generiques g
+      WHERE g.cis = m.cis AND g.type_code IN ('0', '5')
+    )`);
+  }
+  if (opts.commercialise) {
+    parts.push(`AND m.etat_commercialisation LIKE 'Commercialis%'`);
+  }
+  if (opts.mitm) {
+    parts.push(`AND m.is_mitm = 1`);
+  }
+  if (opts.infoImportante) {
+    parts.push(`AND m.has_info_importante = 1`);
+  }
+  if (opts.surveillanceRenforcee) {
+    parts.push(`AND m.surveillance_renforcee = 1`);
+  }
+  if (opts.tensionDispo) {
+    parts.push(
+      `AND m.dispo_code IS NOT NULL AND TRIM(m.dispo_code) != '' AND m.dispo_code != '4'`,
+    );
+  }
+  return parts.filter(Boolean).join('\n       ');
+}
+
+/** Avec « Remboursable » : tri par taux décroissant (100 %, 65 %, 30 %…). */
+function medOrderClause(opts: MedQueryOptions = {}): string {
+  if (opts.remboursable) {
+    return `${TAUX_MAX_EXPR} DESC, m.eligible_ide DESC, ${TRI_COMMERCIALISEES}, m.nom`;
+  }
+  return `m.eligible_ide DESC, ${TRI_COMMERCIALISEES}, m.nom`;
+}
+
+function normalizeMedOpts(
+  niveauOrOpts?: NiveauIde | 'liste' | null | MedQueryOptions,
+): MedQueryOptions {
+  if (niveauOrOpts == null) return {};
+  if (typeof niveauOrOpts === 'string') return { niveau: niveauOrOpts };
+  return niveauOrOpts;
+}
+
 export async function searchMedicaments(
   query: string,
-  niveau: NiveauIde | 'liste' | null = null,
+  niveauOrOpts: NiveauIde | 'liste' | null | MedQueryOptions = null,
 ): Promise<BdpmMedicament[]> {
+  const opts = normalizeMedOpts(niveauOrOpts);
   const db = await getDb();
   const q = `%${query.trim()}%`;
   const rows = await db.getAllAsync<MedRow>(
     `SELECT ${MED_SELECT}
      FROM medicaments m
      WHERE (m.nom LIKE ? OR m.substances LIKE ? OR m.resume LIKE ?)
-       ${niveauClause(niveau)}
-     ORDER BY m.eligible_ide DESC, ${TRI_COMMERCIALISEES}, m.nom LIMIT 80`,
+       ${medFilterClauses(opts)}
+     ORDER BY ${medOrderClause(opts)} LIMIT 80`,
     [q, q, q],
   );
   return rows.map(mapMed);
@@ -373,27 +484,20 @@ export async function searchMedicaments(
 
 export async function listMedicaments(
   limit = 80,
-  niveau: NiveauIde | 'liste' | null = null,
+  niveauOrOpts: NiveauIde | 'liste' | null | MedQueryOptions = null,
 ): Promise<BdpmMedicament[]> {
+  const opts = normalizeMedOpts(niveauOrOpts);
   const db = await getDb();
   const rows = await db.getAllAsync<MedRow>(
     `SELECT ${MED_SELECT}
      FROM medicaments m
-     WHERE 1 = 1 ${niveauClause(niveau)}
-     ORDER BY m.eligible_ide DESC, ${TRI_COMMERCIALISEES}, m.nom
+     WHERE 1 = 1
+       ${medFilterClauses(opts)}
+     ORDER BY ${medOrderClause(opts)}
      LIMIT ?`,
     [limit],
   );
   return rows.map(mapMed);
-}
-
-export async function getMedicamentById(id: string): Promise<BdpmMedicament | null> {
-  const db = await getDb();
-  const row = await db.getFirstAsync<MedRow>(
-    `SELECT ${MED_SELECT} FROM medicaments m WHERE m.id = ?`,
-    [id],
-  );
-  return row ? mapMed(row) : null;
 }
 
 export async function getMedicamentDetail(id: string): Promise<BdpmMedicamentDetail | null> {
@@ -631,8 +735,23 @@ export async function getLocalContentInfo(): Promise<{
 export async function getMedicamentsByItemId(
   itemArreteId: string,
   limit = 40,
+  query?: string,
 ): Promise<BdpmMedicament[]> {
   const db = await getDb();
+  const needle = query?.trim() ?? '';
+  if (needle.length >= 2) {
+    const q = `%${needle}%`;
+    const rows = await db.getAllAsync<MedRow>(
+      `SELECT ${MED_SELECT}
+       FROM medicaments m
+       WHERE m.item_arrete_id = ? AND m.eligible_ide = 1
+         AND (m.nom LIKE ? OR m.substances LIKE ? OR m.resume LIKE ?)
+       ORDER BY ${TRI_COMMERCIALISEES}, m.nom
+       LIMIT ?`,
+      [itemArreteId, q, q, q, limit],
+    );
+    return rows.map(mapMed);
+  }
   const rows = await db.getAllAsync<MedRow>(
     `SELECT ${MED_SELECT}
      FROM medicaments m
@@ -657,8 +776,24 @@ export async function countMedicamentsByItemId(itemArreteId: string): Promise<nu
 export async function getMedicamentsByDomaine(
   domaine: DomaineId,
   limit = 60,
+  query?: string,
 ): Promise<BdpmMedicament[]> {
   const db = await getDb();
+  const needle = query?.trim() ?? '';
+  if (needle.length >= 2) {
+    const q = `%${needle}%`;
+    const rows = await db.getAllAsync<MedRow>(
+      `SELECT ${MED_SELECT}
+       FROM medicaments m
+       INNER JOIN arrete_items a ON a.id = m.item_arrete_id
+       WHERE a.domaine = ? AND m.eligible_ide = 1
+         AND (m.nom LIKE ? OR m.substances LIKE ? OR m.resume LIKE ?)
+       ORDER BY ${TRI_COMMERCIALISEES}, m.nom
+       LIMIT ?`,
+      [domaine, q, q, q, limit],
+    );
+    return rows.map(mapMed);
+  }
   const rows = await db.getAllAsync<MedRow>(
     `SELECT ${MED_SELECT}
      FROM medicaments m

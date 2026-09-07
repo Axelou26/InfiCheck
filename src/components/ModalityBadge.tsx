@@ -3,33 +3,23 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors, radii, typography } from '../theme';
 import type { Modalite } from '../types';
 
-const CONFIG: Record<
-  Modalite,
-  { label: string; icon: keyof typeof Ionicons.glyphMap; bg: string; fg: string }
-> = {
+const CONFIG = {
   prescrire: {
     label: 'Prescrire',
-    icon: 'create-outline',
+    icon: 'create-outline' as const,
     bg: colors.primarySoft,
     fg: colors.badgePrescribe,
   },
   renouveler: {
     label: 'Renouveler',
-    icon: 'refresh-outline',
+    icon: 'refresh-outline' as const,
     bg: colors.primaryTint,
     fg: colors.badgeRenew,
   },
-  les_deux: {
-    label: 'Prescrire · Renouveler',
-    icon: 'sync-outline',
-    bg: colors.accentSoft,
-    fg: colors.badgeBoth,
-  },
 };
 
-export function ModalityBadge({ modalite }: { modalite: Modalite }) {
-  const { label, icon, bg, fg } = CONFIG[modalite];
-
+function SingleBadge({ kind }: { kind: 'prescrire' | 'renouveler' }) {
+  const { label, icon, bg, fg } = CONFIG[kind];
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
       <Ionicons name={icon} size={12} color={fg} />
@@ -38,7 +28,22 @@ export function ModalityBadge({ modalite }: { modalite: Modalite }) {
   );
 }
 
+/** Affiche Prescrire, Renouveler, ou les deux badges côte à côte (jamais « Les deux »). */
+export function ModalityBadge({ modalite }: { modalite: Modalite }) {
+  if (modalite === 'les_deux') {
+    return (
+      <View style={styles.row}>
+        <SingleBadge kind="prescrire" />
+        <SingleBadge kind="renouveler" />
+      </View>
+    );
+  }
+
+  return <SingleBadge kind={modalite} />;
+}
+
 const styles = StyleSheet.create({
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignSelf: 'flex-start' },
   badge: {
     alignSelf: 'flex-start',
     flexDirection: 'row',

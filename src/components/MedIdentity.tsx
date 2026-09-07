@@ -1,34 +1,50 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, radii, typography } from '../theme';
-import { remboursementLabel } from '../utils/medicament';
-
-export function PastilleRemboursable() {
-  return <View accessibilityLabel="Remboursable" style={styles.pastille} />;
-}
+import {
+  REMBOURSEMENT_MUTUELLE_HINT,
+  hasResteAChargeAmo,
+  remboursementLabel,
+} from '../utils/medicament';
 
 export function RemboursementBadge({
   remboursable,
   tauxLabel,
+  showMutuelleHint = false,
 }: {
   remboursable: boolean;
   tauxLabel: string | null;
+  /** Affiche la précision mutuelle (fiche détail). */
+  showMutuelleHint?: boolean;
 }) {
+  const hint =
+    showMutuelleHint && remboursable && hasResteAChargeAmo(tauxLabel)
+      ? REMBOURSEMENT_MUTUELLE_HINT
+      : showMutuelleHint && remboursable && !hasResteAChargeAmo(tauxLabel) && tauxLabel
+        ? 'Taux Assurance Maladie à 100 % (BDPM) — hors complément mutuelle.'
+        : null;
+
   return (
-    <View
-      style={[
-        styles.badge,
-        { backgroundColor: remboursable ? colors.accentSoft : colors.surfaceMuted },
-      ]}
-    >
-      <Ionicons
-        name={remboursable ? 'shield-checkmark' : 'remove-circle-outline'}
-        size={12}
-        color={remboursable ? colors.accent : colors.muted}
-      />
-      <Text style={[styles.badgeText, { color: remboursable ? colors.accent : colors.muted }]}>
-        {remboursementLabel(remboursable, tauxLabel)}
-      </Text>
+    <View style={styles.badgeBlock}>
+      <View
+        style={[
+          styles.badge,
+          { backgroundColor: remboursable ? colors.accentSoft : colors.surfaceMuted },
+        ]}
+      >
+        <Ionicons
+          name={remboursable ? 'shield-checkmark' : 'remove-circle-outline'}
+          size={12}
+          color={remboursable ? colors.accent : colors.muted}
+        />
+        <Text style={[styles.badgeText, { color: remboursable ? colors.accent : colors.muted }]}>
+          {remboursementLabel(remboursable, tauxLabel)}
+        </Text>
+      </View>
+      {remboursable && hasResteAChargeAmo(tauxLabel) && !showMutuelleHint ? (
+        <Text style={styles.hintShort}>Mutuelle possible sur le reste</Text>
+      ) : null}
+      {hint ? <Text style={styles.hintFull}>{hint}</Text> : null}
     </View>
   );
 }
@@ -107,6 +123,7 @@ const styles = StyleSheet.create({
   commercial: { ...typography.subtitle, fontSize: 17, color: colors.ink },
   nom: { color: colors.inkSoft, fontSize: 13, lineHeight: 18 },
   dci: { color: colors.mutedLight, fontSize: 12, lineHeight: 17, fontWeight: '600' },
+  badgeBlock: { gap: 3, marginTop: 3, alignSelf: 'flex-start', maxWidth: '100%' },
   badge: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
@@ -115,8 +132,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: radii.full,
-    marginTop: 3,
   },
   badgeText: { fontWeight: '800', fontSize: 11 },
-  pastille: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent },
+  hintShort: { color: colors.mutedLight, fontSize: 11, fontWeight: '600', paddingLeft: 2 },
+  hintFull: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
+    paddingLeft: 2,
+    maxWidth: 320,
+  },
 });

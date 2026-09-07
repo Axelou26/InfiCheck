@@ -1,15 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { EligibiliteBadge } from '../components/EligibiliteBadge';
+import {
+  MedAttrFilterChips,
+  countActiveMedAttrs,
+  medAttrToQuery,
+  type MedAttrFilters,
+} from '../components/MedAttrFilters';
 import { MedIdentity } from '../components/MedIdentity';
 import { FilterChip, SearchField } from '../components/controls';
 import { ContentUpdateCard } from '../components/ContentUpdateCard';
 import { CountUp } from '../components/motion';
 import { EmptyState, Pill, PressableScale, SkeletonCard } from '../components/ui';
+import { TabRootHeader } from '../components/NavChrome';
 import { useContentUpdateContext } from '../content/ContentUpdateProvider';
 import { getMedicationStats, getMeta, listMedicaments, searchMedicaments } from '../db/database';
 import type { RootStackParamList } from '../navigation/types';
@@ -38,10 +45,21 @@ export function MedicationsScreen() {
   const contentUpdate = useContentUpdateContext();
   const [query, setQuery] = useState('');
   const [filtre, setFiltre] = useState<Filtre>('liste');
+  const [attrs, setAttrs] = useState<MedAttrFilters>({});
   const [items, setItems] = useState<BdpmMedicament[]>([]);
   const [importedAt, setImportedAt] = useState('');
   const [stats, setStats] = useState({ total: 0, eligible: 0, autorisees: 0, sousConditions: 0 });
   const [loading, setLoading] = useState(true);
+
+  const attrCount = countActiveMedAttrs(attrs);
+
+  const queryOpts = useMemo(
+    () => ({
+      niveau: (filtre === 'tous' ? null : filtre) as NiveauIde | 'liste' | null,
+      ...medAttrToQuery(attrs),
+    }),
+    [filtre, attrs],
+  );
 
   useEffect(() => {
     getMeta('bdpm_imported_at').then((v) => setImportedAt(v ?? ''));
@@ -50,16 +68,15 @@ export function MedicationsScreen() {
 
   useEffect(() => {
     setLoading(true);
-    const niveau = filtre === 'tous' ? null : filtre;
     const timer = setTimeout(() => {
       const run =
         query.trim().length >= 2
-          ? searchMedicaments(query, niveau)
-          : listMedicaments(80, niveau);
+          ? searchMedicaments(query, queryOpts)
+          : listMedicaments(80, queryOpts);
       run.then(setItems).finally(() => setLoading(false));
     }, 180);
     return () => clearTimeout(timer);
-  }, [query, filtre]);
+  }, [query, queryOpts]);
 
   const counts: Record<Filtre, number> = {
     liste: stats.eligible,
@@ -80,6 +97,11 @@ export function MedicationsScreen() {
       keyExtractor={(item) => item.id}
       ListHeaderComponent={
         <View style={styles.header}>
+          <TabRootHeader
+            title="Liste IDE"
+            subtitle="Spécialités BDPM · éligibilité prescription"
+            icon="flask-outline"
+          />
           <View style={styles.sourceCard}>
             <View style={styles.sourceIcon}>
               <Ionicons name="shield-checkmark" size={16} color={colors.primary} />
@@ -101,6 +123,7 @@ export function MedicationsScreen() {
 
           <ContentUpdateCard state={contentUpdate} compact />
 
+          <Text style={styles.filterLabel}>Éligibilité IDE</Text>
           <View style={styles.chipRow}>
             {FILTRES.map((f) => (
               <FilterChip
@@ -115,6 +138,20 @@ export function MedicationsScreen() {
               />
             ))}
           </View>
+
+          <View style={styles.attrHead}>
+            <Text style={styles.filterLabel}>Filtres BDPM</Text>
+            {attrCount > 0 ? (
+              <PressableScale
+                accessibilityLabel="Réinitialiser les filtres BDPM"
+                onPress={() => setAttrs({})}
+                scaleTo={0.95}
+              >
+                <Text style={styles.reset}>Réinitialiser ({attrCount})</Text>
+              </PressableScale>
+            ) : null}
+          </View>
+          <MedAttrFilterChips value={attrs} onChange={setAttrs} />
 
           {!loading && items.length > 0 ? (
             <Animated.View entering={FadeIn.duration(200)}>
@@ -138,7 +175,7 @@ export function MedicationsScreen() {
           <EmptyState
             icon="flask-outline"
             title="Aucune spécialité"
-            body="Aucune spécialité ne correspond à ce filtre et à cette recherche."
+            body="Aucune spécialité ne correspond à ces filtres et à cette recherche."
           />
         )
       }
@@ -177,7 +214,7 @@ export function MedicationsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.md, gap: spacing.sm, paddingBottom: TAB_BAR_CLEARANCE },
+  content: { paddingHorizontal: spacing.md, gap: spacing.sm, paddingBottom: TAB_BAR_CLEARANCE },
   header: { gap: spacing.sm, paddingBottom: spacing.xs },
   sourceCard: {
     flexDirection: 'row',
@@ -199,8 +236,15 @@ const styles = StyleSheet.create({
   sourceTitle: { color: colors.primary, fontWeight: '800', fontSize: 13 },
   sourceSub: { color: colors.primaryMid, fontSize: 12, lineHeight: 16 },
   sourceStrong: { color: colors.primary, fontWeight: '800' },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  resultCount: { ...typography.section, color: colors.mutedLight, marginTop: spacing.xs },
+  filterLabel: { ...typography.caption, color: colors.muted, fontWeight: '700' },
+  attrHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  reset: { color: colors.accent, fontSize: 12.5, fontWeight: '800' },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  resultCount: { color: colors.muted, fontSize: 13, fontWeight: '700' },
   skeletons: { gap: spacing.sm },
   card: {
     backgroundColor: colors.surface,

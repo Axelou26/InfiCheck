@@ -1,9 +1,3 @@
-/** Identifiant unique d'un paquet contenu (BDPM + catalogue arrêté). */
-export type ContentVersion = {
-  importedAt: string;
-  catalogVersion: string;
-};
-
 export type ContentManifest = {
   schema: 1;
   contentVersion: string;
@@ -25,15 +19,6 @@ export type ContentManifest = {
 export function toContentVersionKey(importedAt: string, catalogVersion: string): string {
   const day = importedAt.trim().slice(0, 10);
   return `${day}+${catalogVersion.trim()}`;
-}
-
-export function parseContentVersionKey(key: string): ContentVersion | null {
-  const sep = key.indexOf('+');
-  if (sep <= 0) return null;
-  const importedAt = key.slice(0, sep);
-  const catalogVersion = key.slice(sep + 1);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(importedAt) || !catalogVersion) return null;
-  return { importedAt, catalogVersion };
 }
 
 export function isNewerContentVersion(candidate: string, current: string): boolean {

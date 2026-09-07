@@ -63,11 +63,6 @@ export function EligibiliteBadge({
   );
 }
 
-/** Liseré vertical coloré : repère d'éligibilité sur le bord gauche d'une carte. */
-export function EligibiliteEdge({ niveau }: { niveau: NiveauIde }) {
-  return <View style={[styles.edge, { backgroundColor: TONES[niveau].solid }]} />;
-}
-
 const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
@@ -79,13 +74,4 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
   },
   text: { ...typography.micro, fontSize: 11.5 },
-  edge: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4,
-    borderTopLeftRadius: radii.md,
-    borderBottomLeftRadius: radii.md,
-  },
 });

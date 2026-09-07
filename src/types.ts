@@ -2,12 +2,16 @@ export type Modalite = 'prescrire' | 'renouveler' | 'les_deux';
 
 export type DomaineId = 'I' | 'II' | 'III' | 'IV' | 'V' | 'VI';
 
+/** Nature de la rubrique pour filtrer le catalogue (médicament / DM / examen). */
+export type ItemCategorie = 'medicament' | 'dm' | 'examen';
+
 export type ArreteItem = {
   id: string;
   domaine: DomaineId;
   titre: string;
   description: string;
   modalite: Modalite;
+  categorie: ItemCategorie;
   conditions: string[];
   obligations: string[];
   references: string;
@@ -19,6 +23,15 @@ export type DomaineMeta = {
   titre: string;
   sousTitre: string;
   icon: string;
+};
+
+/** Sous-groupe UI d’un domaine (ne change pas le découpage légal Art. 1). */
+export type DomaineSousGroupe = {
+  id: string;
+  label: string;
+  hint: string;
+  icon: string;
+  itemIds: string[];
 };
 
 /**
@@ -128,9 +141,4 @@ export type BdpmMedicamentDetail = BdpmMedicament & {
   infosImportantes: BdpmInfoImportante[];
   nomsCommerciauxGroupe: BdpmNomCommercialGroupe[];
   ficheBdpmUrl: string;
-};
-
-export type MetaRow = {
-  key: string;
-  value: string;
 };

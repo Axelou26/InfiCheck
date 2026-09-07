@@ -4,8 +4,6 @@ import {
   createNativeStackNavigator,
   type NativeStackNavigationOptions,
 } from '@react-navigation/native-stack';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MenuButton, MenuProvider } from '../components/AppMenu';
 import { CatalogScreen } from '../screens/CatalogScreen';
 import { DomainScreen } from '../screens/DomainScreen';
 import { HomeScreen } from '../screens/HomeScreen';
@@ -14,21 +12,12 @@ import { LegalScreen } from '../screens/LegalScreen';
 import { MedicationDetailScreen } from '../screens/MedicationDetailScreen';
 import { MedicationsScreen } from '../screens/MedicationsScreen';
 import { ConsentProvider } from '../storage/consent';
-import { colors, gradients } from '../theme';
+import { colors } from '../theme';
 import { FloatingTabBar } from './TabBar';
 import type {
   AccueilStackParamList,
   CatalogueStackParamList,
   MedicamentsStackParamList,
-  TabParamList,
-} from './types';
-
-export type {
-  AccueilStackParamList,
-  CatalogueStackParamList,
-  DetailParamList,
-  MedicamentsStackParamList,
-  RootStackParamList,
   TabParamList,
 } from './types';
 
@@ -55,91 +44,40 @@ const navigationTheme: Theme = {
   },
 };
 
-const headerOptions: NativeStackNavigationOptions = {
-  headerBackground: () => (
-    <LinearGradient
-      colors={gradients.hero}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{ flex: 1 }}
-    />
-  ),
-  headerTintColor: colors.white,
-  headerTitleStyle: { fontWeight: '800', fontSize: 17 },
-  headerShadowVisible: false,
-  headerBackTitle: 'Retour',
-  headerRight: () => <MenuButton />,
+const stackOptions: NativeStackNavigationOptions = {
+  headerShown: false,
   contentStyle: { backgroundColor: colors.bg },
+  animation: 'slide_from_right',
 };
 
 function AccueilStack() {
   return (
-    <AccueilStackNav.Navigator screenOptions={headerOptions}>
-      <AccueilStackNav.Screen
-        name="AccueilHome"
-        component={HomeScreen}
-        options={{ headerShown: false }}
-      />
-      <AccueilStackNav.Screen
-        name="Legal"
-        component={LegalScreen}
-        options={{ title: 'Mentions légales' }}
-      />
-      <AccueilStackNav.Screen
-        name="ItemDetail"
-        component={ItemDetailScreen}
-        options={{ title: 'Fiche arrêté' }}
-      />
-      <AccueilStackNav.Screen
-        name="MedicationDetail"
-        component={MedicationDetailScreen}
-        options={{ title: 'Médicament' }}
-      />
+    <AccueilStackNav.Navigator screenOptions={stackOptions}>
+      <AccueilStackNav.Screen name="AccueilHome" component={HomeScreen} />
+      <AccueilStackNav.Screen name="Legal" component={LegalScreen} />
+      <AccueilStackNav.Screen name="ItemDetail" component={ItemDetailScreen} />
+      <AccueilStackNav.Screen name="MedicationDetail" component={MedicationDetailScreen} />
     </AccueilStackNav.Navigator>
   );
 }
 
 function CatalogueStack() {
   return (
-    <CatalogueStackNav.Navigator screenOptions={headerOptions}>
-      <CatalogueStackNav.Screen
-        name="CatalogueHome"
-        component={CatalogScreen}
-        options={{ title: 'Catalogue de l’arrêté' }}
-      />
-      <CatalogueStackNav.Screen name="Domain" component={DomainScreen} options={{ title: 'Domaine' }} />
-      <CatalogueStackNav.Screen
-        name="ItemDetail"
-        component={ItemDetailScreen}
-        options={{ title: 'Fiche arrêté' }}
-      />
-      <CatalogueStackNav.Screen
-        name="MedicationDetail"
-        component={MedicationDetailScreen}
-        options={{ title: 'Médicament' }}
-      />
+    <CatalogueStackNav.Navigator screenOptions={stackOptions}>
+      <CatalogueStackNav.Screen name="CatalogueHome" component={CatalogScreen} />
+      <CatalogueStackNav.Screen name="Domain" component={DomainScreen} />
+      <CatalogueStackNav.Screen name="ItemDetail" component={ItemDetailScreen} />
+      <CatalogueStackNav.Screen name="MedicationDetail" component={MedicationDetailScreen} />
     </CatalogueStackNav.Navigator>
   );
 }
 
 function MedicamentsStack() {
   return (
-    <MedicamentsStackNav.Navigator screenOptions={headerOptions}>
-      <MedicamentsStackNav.Screen
-        name="MedicamentsHome"
-        component={MedicationsScreen}
-        options={{ title: 'Liste IDE' }}
-      />
-      <MedicamentsStackNav.Screen
-        name="MedicationDetail"
-        component={MedicationDetailScreen}
-        options={{ title: 'Médicament' }}
-      />
-      <MedicamentsStackNav.Screen
-        name="ItemDetail"
-        component={ItemDetailScreen}
-        options={{ title: 'Fiche arrêté' }}
-      />
+    <MedicamentsStackNav.Navigator screenOptions={stackOptions}>
+      <MedicamentsStackNav.Screen name="MedicamentsHome" component={MedicationsScreen} />
+      <MedicamentsStackNav.Screen name="MedicationDetail" component={MedicationDetailScreen} />
+      <MedicamentsStackNav.Screen name="ItemDetail" component={ItemDetailScreen} />
     </MedicamentsStackNav.Navigator>
   );
 }
@@ -161,9 +99,7 @@ export function RootNavigator({ onReviewTerms }: { onReviewTerms: () => void }) 
   return (
     <NavigationContainer theme={navigationTheme}>
       <ConsentProvider onReviewTerms={onReviewTerms}>
-        <MenuProvider>
-          <Tabs />
-        </MenuProvider>
+        <Tabs />
       </ConsentProvider>
     </NavigationContainer>
   );

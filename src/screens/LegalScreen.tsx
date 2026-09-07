@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BackButton } from '../components/NavChrome';
 import { Card, PressableScale, SectionHeader } from '../components/ui';
 import { ContentUpdateCard } from '../components/ContentUpdateCard';
 import { useContentUpdateContext } from '../content/ContentUpdateProvider';
@@ -20,6 +22,7 @@ function formatAcceptedAt(iso: string) {
 }
 
 export function LegalScreen() {
+  const insets = useSafeAreaInsets();
   const { reviewTerms } = useConsent();
   const contentUpdate = useContentUpdateContext();
   const [acceptance, setAcceptance] = useState<DisclaimerAcceptance | null>(null);
@@ -31,9 +34,13 @@ export function LegalScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + spacing.sm },
+      ]}
       showsVerticalScrollIndicator={false}
     >
+      <BackButton />
       <Animated.View entering={FadeInDown.duration(320)} style={styles.intro}>
         <View style={styles.introIcon}>
           <Text style={styles.introIconText}>§</Text>
@@ -64,6 +71,11 @@ export function LegalScreen() {
           données publique des médicaments (ANSM / HAS / UNCAM) : spécialités, présentations,
           compositions, avis SMR/ASMR, groupes génériques, conditions de prescription et de
           délivrance, ruptures de stock, MITM et informations importantes.
+        </Text>
+        <Text style={styles.caption}>
+          Les taux affichés sont ceux de l’Assurance Maladie (AMO). Un reste à charge (ex. 35 % sur
+          un taux AMO à 65 %) peut être pris en charge par la mutuelle du patient selon son contrat —
+          ce complément n’apparaît pas dans la BDPM.
         </Text>
         <Text style={styles.caption}>
           Licence Ouverte — citer la source et la date de mise à jour, ne pas dénaturer les données.

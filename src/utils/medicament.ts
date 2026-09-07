@@ -11,6 +11,11 @@ function normalizeTaux(raw: string): string {
   return compact.endsWith('%') ? compact : `${compact}%`;
 }
 
+function parseTauxNumber(raw: string): number | null {
+  const n = Number(raw.replace(/\s+/g, '').replace('%', '').replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+
 export function parseTauxAgg(agg: string | null | undefined): {
   remboursable: boolean;
   tauxLabel: string | null;
@@ -32,7 +37,20 @@ export function parseTauxAgg(agg: string | null | undefined): {
   return { remboursable: true, tauxLabel: parts.join(' · ') };
 }
 
+/** Libellé court : taux Assurance Maladie (BDPM), pas le reste à charge patient. */
 export function remboursementLabel(remboursable: boolean, tauxLabel: string | null): string {
-  if (!remboursable) return 'Non remboursable';
-  return tauxLabel ? `Remboursable ${tauxLabel}` : 'Remboursable';
+  if (!remboursable) return 'Non remboursable AMO';
+  return tauxLabel ? `AMO ${tauxLabel}` : 'Remboursable AMO';
 }
+
+/** True si au moins un taux AMO est inférieur à 100 % (complément mutuelle possible). */
+export function hasResteAChargeAmo(tauxLabel: string | null): boolean {
+  if (!tauxLabel) return false;
+  return tauxLabel.split('·').some((part) => {
+    const n = parseTauxNumber(part.trim());
+    return n !== null && n < 100;
+  });
+}
+
+export const REMBOURSEMENT_MUTUELLE_HINT =
+  'Taux Assurance Maladie (BDPM). Le reste à charge peut être pris en charge par la mutuelle, selon le contrat du patient.';

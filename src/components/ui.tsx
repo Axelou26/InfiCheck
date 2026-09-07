@@ -38,20 +38,6 @@ const TONES: Record<Tone, { bg: string; fg: string }> = {
   neutral: { bg: colors.surfaceMuted, fg: colors.muted },
 };
 
-export function toneColors(tone: Tone) {
-  return TONES[tone];
-}
-
-export function Screen({
-  children,
-  contentStyle,
-}: {
-  children: ReactNode;
-  contentStyle?: ViewStyle;
-}) {
-  return <View style={[styles.screen, contentStyle]}>{children}</View>;
-}
-
 /**
  * Pression avec ressort + retour haptique — la brique tactile de toute l'app.
  * `style` accepte un tableau pour composer avec les styles de carte.
@@ -151,13 +137,6 @@ export function Card({
   return <View style={[styles.card, elevationStyle, style]}>{children}</View>;
 }
 
-/** Alias historique conservé pour éviter une migration inutile des appels existants. */
-export const SoftCard = Card;
-
-export function SectionLabel({ children }: { children: string }) {
-  return <Text style={styles.sectionLabel}>{children}</Text>;
-}
-
 export function SectionHeader({
   label,
   title,
@@ -204,127 +183,6 @@ export function Pill({
       <Text style={[styles.pillText, { color: fg }, textStyle]}>{label}</Text>
     </View>
   );
-}
-
-export function GradientPill({
-  label,
-  gradient,
-  icon,
-}: {
-  label: string;
-  gradient: readonly [string, string, ...string[]];
-  icon?: keyof typeof Ionicons.glyphMap;
-}) {
-  return (
-    <LinearGradient
-      colors={gradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.pill, styles.gradientPill]}
-    >
-      {icon ? <Ionicons name={icon} size={12} color={colors.white} /> : null}
-      <Text style={[styles.pillText, { color: colors.white }]}>{label}</Text>
-    </LinearGradient>
-  );
-}
-
-export function IconBubble({
-  icon,
-  color,
-  background,
-  size = 44,
-  gradient,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  color?: string;
-  background?: string;
-  size?: number;
-  gradient?: readonly [string, string, ...string[]];
-}) {
-  const inner = <Ionicons name={icon} size={size * 0.48} color={color ?? colors.white} />;
-  const frame = { width: size, height: size, borderRadius: size / 2 };
-
-  if (gradient) {
-    return (
-      <LinearGradient
-        colors={gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.bubble, frame]}
-      >
-        {inner}
-      </LinearGradient>
-    );
-  }
-  return (
-    <View style={[styles.bubble, frame, { backgroundColor: background ?? colors.primarySoft }]}>
-      {inner}
-    </View>
-  );
-}
-
-export function IconTile({
-  icon,
-  label,
-  sublabel,
-  onPress,
-  tone = 'primary',
-  gradient,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  sublabel?: string;
-  onPress: () => void;
-  tone?: Tone;
-  gradient?: readonly [string, string, ...string[]];
-}) {
-  const { bg, fg } = TONES[tone];
-  return (
-    <PressableScale onPress={onPress} accessibilityLabel={label} style={styles.tile}>
-      <IconBubble icon={icon} color={gradient ? colors.white : fg} background={bg} gradient={gradient} size={40} />
-      <View style={styles.tileText}>
-        <Text style={styles.tileLabel}>{label}</Text>
-        {sublabel ? <Text style={styles.tileSub}>{sublabel}</Text> : null}
-      </View>
-    </PressableScale>
-  );
-}
-
-export function ChevronRow({
-  title,
-  subtitle,
-  leading,
-  trailing,
-  onPress,
-  style,
-}: {
-  title: string;
-  subtitle?: string;
-  leading?: ReactNode;
-  trailing?: ReactNode;
-  onPress: () => void;
-  style?: StyleProp<ViewStyle>;
-}) {
-  return (
-    <PressableScale
-      onPress={onPress}
-      accessibilityLabel={title}
-      scaleTo={0.985}
-      style={[styles.row, style]}
-    >
-      {leading}
-      <View style={styles.rowText}>
-        <Text style={styles.rowTitle}>{title}</Text>
-        {subtitle ? <Text style={styles.rowSub}>{subtitle}</Text> : null}
-      </View>
-      {trailing}
-      <Ionicons name="chevron-forward" size={18} color={colors.mutedLight} />
-    </PressableScale>
-  );
-}
-
-export function Divider({ style }: { style?: StyleProp<ViewStyle> }) {
-  return <View style={[styles.divider, style]} />;
 }
 
 /** Barre de progression animée, avec dégradé. */
@@ -435,23 +293,6 @@ export function EmptyState({
   );
 }
 
-/** Apparition décalée pour les listes courtes non virtualisées. */
-export function Stagger({
-  index = 0,
-  children,
-  step = 45,
-}: {
-  index?: number;
-  children: ReactNode;
-  step?: number;
-}) {
-  return (
-    <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * step).duration(360)}>
-      {children}
-    </Animated.View>
-  );
-}
-
 /** Toast bas d'écran, utilisé pour confirmer les copies presse-papier. */
 export function Toast({ label, visible }: { label: string; visible: boolean }) {
   const shown = useSharedValue(0);
@@ -536,7 +377,6 @@ export function GhostButton({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
   disabled: { opacity: 0.45 },
   card: {
     backgroundColor: colors.surface,
@@ -565,40 +405,8 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: radii.full,
   },
-  gradientPill: { paddingVertical: 6 },
   pillDot: { width: 6, height: 6, borderRadius: 3 },
   pillText: { ...typography.micro },
-  bubble: { alignItems: 'center', justifyContent: 'center' },
-  tile: {
-    width: '48%',
-    flexGrow: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-    padding: spacing.md,
-    gap: spacing.sm,
-    minHeight: 116,
-    ...shadow.card,
-  },
-  tileText: { gap: 2 },
-  tileLabel: { ...typography.label, color: colors.ink },
-  tileSub: { color: colors.mutedLight, fontSize: 12, lineHeight: 16, fontWeight: '600' },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-    padding: spacing.md,
-    ...shadow.card,
-  },
-  rowText: { flex: 1, gap: 2 },
-  rowTitle: { color: colors.ink, fontWeight: '700', fontSize: 16, lineHeight: 21 },
-  rowSub: { color: colors.muted, fontSize: 13, lineHeight: 18 },
-  divider: { height: 1, backgroundColor: colors.borderSoft },
   progressTrack: { width: '100%', overflow: 'hidden' },
   progressFill: { height: '100%', overflow: 'hidden', borderRadius: radii.full },
   empty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl, paddingHorizontal: spacing.lg },

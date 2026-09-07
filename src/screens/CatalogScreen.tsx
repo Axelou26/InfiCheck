@@ -6,19 +6,43 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { ModalityBadge } from '../components/ModalityBadge';
-import { SearchField, SegmentedControl } from '../components/controls';
+import { FilterChip, SearchField, SegmentedControl } from '../components/controls';
 import { EmptyState, PressableScale, SectionHeader } from '../components/ui';
+import { TabRootHeader } from '../components/NavChrome';
 import { ARRETE_ITEMS, DOMAINES } from '../data/arreteCatalog';
 import type { RootStackParamList } from '../navigation/types';
 import { TAB_BAR_CLEARANCE } from '../navigation/TabBar';
 import { colors, domainPalette, radii, shadow, spacing, typography } from '../theme';
+import type { DomaineId, ItemCategorie, Modalite } from '../types';
 
 type Vue = 'domaines' | 'rubriques';
+type DomaineFiltre = 'tous' | DomaineId;
+type ModaliteFiltre = 'toutes' | 'prescrire' | 'renouveler';
+type CategorieFiltre = 'toutes' | ItemCategorie;
+
+const CATEGORIE_LABEL: Record<ItemCategorie, string> = {
+  medicament: 'Médicament',
+  dm: 'DM',
+  examen: 'Examen',
+};
+
+const MODALITE_OPTIONS: { value: 'prescrire' | 'renouveler'; label: string }[] = [
+  { value: 'prescrire', label: 'Prescrire' },
+  { value: 'renouveler', label: 'Renouveler' },
+];
+
+function matchesModalite(itemModalite: Modalite, filtre: ModaliteFiltre): boolean {
+  if (filtre === 'toutes') return true;
+  return itemModalite === filtre || itemModalite === 'les_deux';
+}
 
 export function CatalogScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [vue, setVue] = useState<Vue>('domaines');
   const [query, setQuery] = useState('');
+  const [domaineFiltre, setDomaineFiltre] = useState<DomaineFiltre>('tous');
+  const [modaliteFiltre, setModaliteFiltre] = useState<ModaliteFiltre>('toutes');
+  const [categorieFiltre, setCategorieFiltre] = useState<CategorieFiltre>('toutes');
 
   const countByDomain = useMemo(() => {
     const counts = new Map<string, number>();
@@ -28,18 +52,30 @@ export function CatalogScreen() {
     return counts;
   }, []);
 
+  const filtreActif =
+    domaineFiltre !== 'tous' || modaliteFiltre !== 'toutes' || categorieFiltre !== 'toutes';
+
   const rubriques = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    const sorted = [...ARRETE_ITEMS].sort(
-      (a, b) => a.domaine.localeCompare(b.domaine) || a.titre.localeCompare(b.titre, 'fr'),
-    );
-    if (needle.length < 2) return sorted;
-    return sorted.filter(
-      (item) =>
-        item.titre.toLowerCase().includes(needle) ||
-        item.description.toLowerCase().includes(needle),
-    );
-  }, [query]);
+    return [...ARRETE_ITEMS]
+      .filter((item) => {
+        if (domaineFiltre !== 'tous' && item.domaine !== domaineFiltre) return false;
+        if (!matchesModalite(item.modalite, modaliteFiltre)) return false;
+        if (categorieFiltre !== 'toutes' && item.categorie !== categorieFiltre) return false;
+        if (needle.length < 2) return true;
+        return (
+          item.titre.toLowerCase().includes(needle) ||
+          item.description.toLowerCase().includes(needle)
+        );
+      })
+      .sort((a, b) => a.domaine.localeCompare(b.domaine) || a.titre.localeCompare(b.titre, 'fr'));
+  }, [query, domaineFiltre, modaliteFiltre, categorieFiltre]);
+
+  function resetFiltres() {
+    setDomaineFiltre('tous');
+    setModaliteFiltre('toutes');
+    setCategorieFiltre('toutes');
+  }
 
   return (
     <ScrollView
@@ -48,6 +84,11 @@ export function CatalogScreen() {
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
+      <TabRootHeader
+        title="Catalogue de l’arrêté"
+        subtitle="6 domaines · liste fermée Art. 1"
+        icon="albums-outline"
+      />
       <SectionHeader
         title="Liste fermée de l’article 1"
         hint="Seuls ces domaines peuvent être prescrits ou renouvelés par l’infirmier."
@@ -120,11 +161,114 @@ export function CatalogScreen() {
             onChangeText={setQuery}
             placeholder="Filtrer les rubriques…"
           />
+
+          <View style={styles.filterBlock}>
+            <Text style={styles.filterLabel}>Domaine</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+            >
+              <FilterChip
+                label="Tous"
+                active={domaineFiltre === 'tous'}
+                onPress={() => setDomaineFiltre('tous')}
+                count={ARRETE_ITEMS.length}
+              />
+              {DOMAINES.map((d) => {
+                const palette = domainPalette(d.id);
+                return (
+                  <FilterChip
+                    key={d.id}
+                    label={d.id}
+                    active={domaineFiltre === d.id}
+                    onPress={() => setDomaineFiltre(d.id)}
+                    color={palette.solid}
+                    tint={palette.tint}
+                    count={countByDomain.get(d.id)}
+                  />
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          <View style={styles.filterBlock}>
+            <Text style={styles.filterLabel}>Modalité</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+            >
+              <FilterChip
+                label="Toutes"
+                active={modaliteFiltre === 'toutes'}
+                onPress={() => setModaliteFiltre('toutes')}
+              />
+              {MODALITE_OPTIONS.map((m) => (
+                <FilterChip
+                  key={m.value}
+                  label={m.label}
+                  active={modaliteFiltre === m.value}
+                  onPress={() => setModaliteFiltre(m.value)}
+                  color={
+                    m.value === 'prescrire' ? colors.badgePrescribe : colors.badgeRenew
+                  }
+                  tint={colors.primarySoft}
+                />
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={styles.filterBlock}>
+            <Text style={styles.filterLabel}>Type</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+            >
+              <FilterChip
+                label="Tous"
+                active={categorieFiltre === 'toutes'}
+                onPress={() => setCategorieFiltre('toutes')}
+              />
+              {(Object.keys(CATEGORIE_LABEL) as ItemCategorie[]).map((c) => (
+                <FilterChip
+                  key={c}
+                  label={CATEGORIE_LABEL[c]}
+                  active={categorieFiltre === c}
+                  onPress={() => setCategorieFiltre(c)}
+                  icon={
+                    c === 'medicament'
+                      ? 'flask-outline'
+                      : c === 'dm'
+                        ? 'hardware-chip-outline'
+                        : 'water-outline'
+                  }
+                />
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={styles.resultBar}>
+            <Text style={styles.resultCount}>
+              {rubriques.length} rubrique{rubriques.length > 1 ? 's' : ''}
+            </Text>
+            {filtreActif ? (
+              <PressableScale
+                accessibilityLabel="Réinitialiser les filtres"
+                onPress={resetFiltres}
+                scaleTo={0.95}
+              >
+                <Text style={styles.resetFiltres}>Réinitialiser</Text>
+              </PressableScale>
+            ) : null}
+          </View>
+
           {rubriques.length === 0 ? (
             <EmptyState
               icon="funnel-outline"
               title="Aucune rubrique trouvée"
-              body="Essayez un autre mot-clé, ou revenez à la vue par domaines."
+              body="Élargissez les filtres ou essayez un autre mot-clé."
             />
           ) : (
             rubriques.map((item, i) => {
@@ -148,6 +292,9 @@ export function CatalogScreen() {
                             {item.domaine}
                           </Text>
                         </View>
+                        <View style={styles.catBadge}>
+                          <Text style={styles.catBadgeText}>{CATEGORIE_LABEL[item.categorie]}</Text>
+                        </View>
                         <ModalityBadge modalite={item.modalite} />
                       </View>
                       <Text style={styles.rubriqueTitle}>{item.titre}</Text>
@@ -170,9 +317,9 @@ export function CatalogScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: {
-    padding: spacing.md,
-    gap: spacing.md,
+    paddingHorizontal: spacing.md,
     paddingBottom: TAB_BAR_CLEARANCE,
+    gap: spacing.md,
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   gridCell: { width: '48%', flexGrow: 1 },
@@ -212,6 +359,17 @@ const styles = StyleSheet.create({
   },
   domainCountText: { fontSize: 11, fontWeight: '800' },
   list: { gap: spacing.sm },
+  filterBlock: { gap: 6 },
+  filterLabel: { ...typography.caption, color: colors.muted, fontWeight: '700' },
+  chipRow: { gap: 8, paddingRight: spacing.md },
+  resultBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 2,
+  },
+  resultCount: { color: colors.muted, fontSize: 13, fontWeight: '700' },
+  resetFiltres: { color: colors.accent, fontSize: 13, fontWeight: '800' },
   rubrique: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -237,6 +395,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rubriqueDomainText: { fontSize: 11, fontWeight: '800' },
+  catBadge: {
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+  },
+  catBadgeText: { fontSize: 10, fontWeight: '800', color: colors.muted },
   rubriqueTitle: { color: colors.ink, fontWeight: '700', fontSize: 15, lineHeight: 20 },
   rubriqueDesc: { color: colors.muted, fontSize: 12.5, lineHeight: 17 },
 });

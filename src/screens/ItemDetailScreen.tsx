@@ -5,11 +5,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { AntalgiqueCalculator } from '../components/AntalgiqueCalculator';
 import { FavoriteToggle } from '../components/FavoriteToggle';
 import { FicheChecklist } from '../components/FicheChecklist';
+import { GuidePrescription } from '../components/GuidePrescription';
 import { MedIdentity } from '../components/MedIdentity';
 import { ModalityBadge } from '../components/ModalityBadge';
-import { Collapsible } from '../components/controls';
+import { BackButton } from '../components/NavChrome';
+import { Collapsible, SearchField } from '../components/controls';
 import {
   GhostButton,
   PressableScale,
@@ -20,6 +23,7 @@ import {
 } from '../components/ui';
 import { getDomaine } from '../data/arreteCatalog';
 import { EXEMPLES_ORDONNANCE } from '../data/exemplesOrdonnance';
+import { getGuideForItem } from '../data/guidesPrescription';
 import { getItemById, getMedicamentsByItemId } from '../db/database';
 import type { RootStackParamList } from '../navigation/types';
 import { TAB_BAR_CLEARANCE } from '../navigation/TabBar';
@@ -27,22 +31,27 @@ import { pushRecent } from '../storage/library';
 import { colors, domainPalette, radii, shadow, spacing, typography } from '../theme';
 import type { ArreteItem, BdpmMedicament } from '../types';
 import { haptic } from '../utils/haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ItemDetail'>;
 
 export function ItemDetailScreen({ route, navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const [item, setItem] = useState<ArreteItem | null>(null);
   const [meds, setMeds] = useState<BdpmMedicament[]>([]);
+  const [medTotal, setMedTotal] = useState(0);
+  const [medQuery, setMedQuery] = useState('');
+  const [medsLoading, setMedsLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const id = route.params.itemId;
+    setMedQuery('');
     getItemById(id).then((found) => {
       setItem(found);
       if (found) {
         const domaine = getDomaine(found.domaine);
-        navigation.setOptions({ title: domaine.titre });
         void pushRecent({
           kind: 'arrete',
           id: found.id,
@@ -52,8 +61,28 @@ export function ItemDetailScreen({ route, navigation }: Props) {
         });
       }
     });
-    getMedicamentsByItemId(id, 60).then(setMeds);
-  }, [route.params.itemId, navigation]);
+  }, [route.params.itemId]);
+
+  useEffect(() => {
+    const id = route.params.itemId;
+    let cancelled = false;
+    setMedsLoading(true);
+    const timer = setTimeout(() => {
+      getMedicamentsByItemId(id, 80, medQuery)
+        .then((list) => {
+          if (cancelled) return;
+          setMeds(list);
+          if (medQuery.trim().length < 2) setMedTotal(list.length);
+        })
+        .finally(() => {
+          if (!cancelled) setMedsLoading(false);
+        });
+    }, medQuery.trim().length >= 2 ? 180 : 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [route.params.itemId, medQuery]);
 
   useEffect(
     () => () => {
@@ -85,6 +114,13 @@ export function ItemDetailScreen({ route, navigation }: Props) {
   const palette = domainPalette(item.domaine);
   const meta = getDomaine(item.domaine);
   const exemples = EXEMPLES_ORDONNANCE[item.id] ?? [];
+  const guide = getGuideForItem(item.id);
+
+  function handleCopied(text: string) {
+    setCopied(text);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setCopied(null), 1700);
+  }
 
   return (
     <View style={styles.screen}>
@@ -96,19 +132,10 @@ export function ItemDetailScreen({ route, navigation }: Props) {
           colors={palette.gradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.hero}
+          style={[styles.hero, { paddingTop: insets.top + spacing.sm }]}
         >
           <View style={styles.heroTop}>
-            <View style={styles.heroDomain}>
-              <Ionicons
-                name={meta.icon as keyof typeof Ionicons.glyphMap}
-                size={13}
-                color={colors.white}
-              />
-              <Text style={styles.heroDomainText}>
-                {item.domaine} · {meta.titre}
-              </Text>
-            </View>
+            <BackButton light />
             <FavoriteToggle
               kind="arrete"
               id={item.id}
@@ -116,6 +143,16 @@ export function ItemDetailScreen({ route, navigation }: Props) {
               subtitle={meta.titre}
               accent={palette.solid}
             />
+          </View>
+          <View style={styles.heroDomain}>
+            <Ionicons
+              name={meta.icon as keyof typeof Ionicons.glyphMap}
+              size={13}
+              color={colors.white}
+            />
+            <Text style={styles.heroDomainText}>
+              {item.domaine} · {meta.titre}
+            </Text>
           </View>
           <Text style={styles.heroTitle}>{item.titre}</Text>
           <View style={styles.heroBadges}>
@@ -162,6 +199,41 @@ export function ItemDetailScreen({ route, navigation }: Props) {
 
           <FicheChecklist item={item} />
 
+          {item.id === 'prod-antalgiques' ? (
+            <Collapsible
+              title="Calculateur palier I"
+              subtitle="Dose, intervalle et max journalier"
+              icon="calculator-outline"
+              accent={palette.solid}
+              tint={palette.tint}
+              defaultOpen
+            >
+              <AntalgiqueCalculator
+                accent={palette.solid}
+                tint={palette.tint}
+                onCopied={handleCopied}
+              />
+            </Collapsible>
+          ) : null}
+
+          {guide ? (
+            <Collapsible
+              title={guide.titre}
+              subtitle={guide.sousTitre}
+              icon="options-outline"
+              accent={palette.solid}
+              tint={palette.tint}
+              defaultOpen
+            >
+              <GuidePrescription
+                itemId={item.id}
+                accent={palette.solid}
+                tint={palette.tint}
+                onCopied={handleCopied}
+              />
+            </Collapsible>
+          ) : null}
+
           <Animated.View entering={FadeInDown.duration(320)} style={styles.block}>
             <SectionHeader
               label="À copier sur l’ordonnancier"
@@ -207,44 +279,65 @@ export function ItemDetailScreen({ route, navigation }: Props) {
             )}
           </Animated.View>
 
-          {meds.length > 0 ? (
+          {medTotal > 0 ? (
             <Collapsible
-              title={`Spécialités BDPM (${meds.length}${meds.length >= 60 ? '+' : ''})`}
+              title={`Spécialités BDPM (${medTotal}${medTotal >= 80 ? '+' : ''})`}
               subtitle="Copier le nom ou ouvrir la fiche détaillée"
               icon="flask"
               accent={palette.solid}
               tint={palette.tint}
+              defaultOpen
             >
-              {meds.map((med) => (
-                <View key={med.id} style={styles.medCard}>
-                  <MedIdentity
-                    nom={med.nom}
-                    nomCommercial={med.nomCommercial}
-                    substances={med.substances}
-                    remboursable={med.remboursable}
-                    tauxRemboursement={med.tauxRemboursement}
-                    withMonogram
-                  />
-                  <View style={styles.medActions}>
-                    <GhostButton
-                      label={copied === med.nom ? 'Copié' : 'Copier'}
-                      icon={copied === med.nom ? 'checkmark' : 'copy-outline'}
-                      color={palette.solid}
-                      onPress={() => copyText(med.nom)}
-                      style={styles.medAction}
-                    />
-                    <GhostButton
-                      label="Fiche"
-                      icon="open-outline"
-                      color={colors.muted}
-                      onPress={() =>
-                        navigation.navigate('MedicationDetail', { medicationId: med.id })
-                      }
-                      style={styles.medAction}
-                    />
-                  </View>
-                </View>
-              ))}
+              <SearchField
+                value={medQuery}
+                onChangeText={setMedQuery}
+                placeholder="Chercher une spécialité ou DCI…"
+              />
+              {medsLoading ? (
+                <Text style={styles.medSearchHint}>Recherche…</Text>
+              ) : meds.length === 0 ? (
+                <Text style={styles.medSearchHint}>
+                  Aucune spécialité pour « {medQuery.trim()} » dans cette rubrique.
+                </Text>
+              ) : (
+                <>
+                  {medQuery.trim().length >= 2 ? (
+                    <Text style={styles.medSearchHint}>
+                      {meds.length} résultat{meds.length > 1 ? 's' : ''}
+                    </Text>
+                  ) : null}
+                  {meds.map((med) => (
+                    <View key={med.id} style={styles.medCard}>
+                      <MedIdentity
+                        nom={med.nom}
+                        nomCommercial={med.nomCommercial}
+                        substances={med.substances}
+                        remboursable={med.remboursable}
+                        tauxRemboursement={med.tauxRemboursement}
+                        withMonogram
+                      />
+                      <View style={styles.medActions}>
+                        <GhostButton
+                          label={copied === med.nom ? 'Copié' : 'Copier'}
+                          icon={copied === med.nom ? 'checkmark' : 'copy-outline'}
+                          color={palette.solid}
+                          onPress={() => copyText(med.nom)}
+                          style={styles.medAction}
+                        />
+                        <GhostButton
+                          label="Fiche"
+                          icon="open-outline"
+                          color={colors.muted}
+                          onPress={() =>
+                            navigation.navigate('MedicationDetail', { medicationId: med.id })
+                          }
+                          style={styles.medAction}
+                        />
+                      </View>
+                    </View>
+                  ))}
+                </>
+              )}
             </Collapsible>
           ) : null}
         </View>
@@ -278,6 +371,7 @@ const styles = StyleSheet.create({
   },
   heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   heroDomain: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
@@ -340,6 +434,7 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     gap: spacing.sm,
   },
+  medSearchHint: { color: colors.muted, fontSize: 12.5, fontWeight: '600' },
   medActions: { flexDirection: 'row', gap: spacing.xs },
   medAction: { flex: 1, paddingVertical: 9 },
 });
