@@ -347,13 +347,27 @@ function ficheUrl(cis: string) {
   return `https://base-donnees-publique.medicaments.gouv.fr/extrait.php?specid=${cis}`;
 }
 
+/** Rubriques à afficher en tête d’un domaine (ordre = priorité). */
+const DOMAIN_PINNED_ITEMS: Partial<Record<DomaineId, string[]>> = {
+  II: ['plaie-pansements'],
+};
+
 export async function getItemsByDomaine(domaine: DomaineId): Promise<ArreteItem[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<ArreteRow>(
     'SELECT * FROM arrete_items WHERE domaine = ? ORDER BY titre',
     [domaine],
   );
-  return rows.map(mapArrete);
+  const items = rows.map(mapArrete);
+  const pinned = DOMAIN_PINNED_ITEMS[domaine];
+  if (!pinned?.length) return items;
+
+  const pinSet = new Set(pinned);
+  const head = pinned
+    .map((id) => items.find((item) => item.id === id))
+    .filter((item): item is ArreteItem => !!item);
+  const rest = items.filter((item) => !pinSet.has(item.id));
+  return [...head, ...rest];
 }
 
 export async function getItemById(id: string): Promise<ArreteItem | null> {

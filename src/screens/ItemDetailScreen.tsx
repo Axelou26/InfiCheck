@@ -6,12 +6,14 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AntalgiqueCalculator } from '../components/AntalgiqueCalculator';
+import { CommentPrescrire } from '../components/CommentPrescrire';
 import { FavoriteToggle } from '../components/FavoriteToggle';
 import { FicheChecklist } from '../components/FicheChecklist';
 import { GuidePrescription } from '../components/GuidePrescription';
 import { MedIdentity } from '../components/MedIdentity';
 import { ModalityBadge } from '../components/ModalityBadge';
 import { BackButton } from '../components/NavChrome';
+import { PansementParcours } from '../components/PansementParcours';
 import { Collapsible, SearchField } from '../components/controls';
 import {
   GhostButton,
@@ -115,6 +117,7 @@ export function ItemDetailScreen({ route, navigation }: Props) {
   const meta = getDomaine(item.domaine);
   const exemples = EXEMPLES_ORDONNANCE[item.id] ?? [];
   const guide = getGuideForItem(item.id);
+  const isPansementParcours = item.id === 'plaie-pansements';
 
   function handleCopied(text: string) {
     setCopied(text);
@@ -169,13 +172,56 @@ export function ItemDetailScreen({ route, navigation }: Props) {
             <Text style={styles.desc}>{item.description}</Text>
           </View>
 
+          {isPansementParcours ? (
+            <Collapsible
+              title="Comment prescrire"
+              subtitle="Feuille, identité IDE, mentions utiles"
+              icon="create-outline"
+              accent={palette.solid}
+              tint={palette.tint}
+              defaultOpen
+            >
+              <CommentPrescrire accent={palette.solid} tint={palette.tint} />
+            </Collapsible>
+          ) : null}
+
+          {isPansementParcours ? (
+            <Collapsible
+              title="Parcours pansements"
+              subtitle="Plaie → choix → résumé et cases"
+              icon="git-branch-outline"
+              accent={palette.solid}
+              tint={palette.tint}
+              defaultOpen
+            >
+              <PansementParcours
+                item={item}
+                accent={palette.solid}
+                tint={palette.tint}
+                onCopied={handleCopied}
+              />
+            </Collapsible>
+          ) : null}
+
+          {!isPansementParcours ? (
+            <Collapsible
+              title="Comment prescrire"
+              subtitle="Feuille, identité IDE, mentions utiles"
+              icon="create-outline"
+              accent={palette.solid}
+              tint={palette.tint}
+            >
+              <CommentPrescrire accent={palette.solid} tint={palette.tint} />
+            </Collapsible>
+          ) : null}
+
           <Collapsible
             title="Conditions"
             subtitle={`${item.conditions.length} point${item.conditions.length > 1 ? 's' : ''} à vérifier`}
             icon="options"
             accent={palette.solid}
             tint={palette.tint}
-            defaultOpen
+            defaultOpen={!isPansementParcours}
           >
             {item.conditions.length === 0 ? (
               <Text style={styles.noteText}>Aucune condition particulière listée.</Text>
@@ -190,14 +236,14 @@ export function ItemDetailScreen({ route, navigation }: Props) {
             icon="shield-checkmark"
             accent={palette.solid}
             tint={palette.tint}
-            defaultOpen
+            defaultOpen={!isPansementParcours}
           >
             {item.obligations.map((o) => (
               <Bullet key={o} text={o} color={palette.solid} />
             ))}
           </Collapsible>
 
-          <FicheChecklist item={item} />
+          {!isPansementParcours ? <FicheChecklist item={item} /> : null}
 
           {item.id === 'prod-antalgiques' ? (
             <Collapsible
@@ -216,7 +262,7 @@ export function ItemDetailScreen({ route, navigation }: Props) {
             </Collapsible>
           ) : null}
 
-          {guide ? (
+          {guide && !isPansementParcours ? (
             <Collapsible
               title={guide.titre}
               subtitle={guide.sousTitre}
@@ -234,6 +280,7 @@ export function ItemDetailScreen({ route, navigation }: Props) {
             </Collapsible>
           ) : null}
 
+          {!isPansementParcours ? (
           <Animated.View entering={FadeInDown.duration(320)} style={styles.block}>
             <SectionHeader
               label="À copier sur l’ordonnancier"
@@ -278,6 +325,7 @@ export function ItemDetailScreen({ route, navigation }: Props) {
               </View>
             )}
           </Animated.View>
+          ) : null}
 
           {medTotal > 0 ? (
             <Collapsible

@@ -14,11 +14,8 @@ export function itemNeedsArt3(item: ArreteItem): boolean {
 }
 
 export function checklistForItem(item: ArreteItem): ChecklistPoint[] {
+  // Pas de point « figure dans la liste fermée » : toute fiche de l’app en fait déjà partie.
   const points: ChecklistPoint[] = [
-    {
-      id: 'liste',
-      label: 'Cette rubrique figure bien dans la liste fermée de l’arrêté',
-    },
     {
       id: 'modalite',
       label:

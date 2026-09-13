@@ -133,12 +133,34 @@ export function DomainScreen({ route, navigation }: Props) {
       </LinearGradient>
 
       <View style={styles.body}>
+        {domaineId === 'II' && !loading ? (
+          <PressableScale
+            scaleTo={0.985}
+            accessibilityLabel="Prescrire un pansement"
+            onPress={() => navigation.navigate('ItemDetail', { itemId: 'plaie-pansements' })}
+            style={[styles.ctaPansement, { borderColor: palette.solid, backgroundColor: palette.tint }]}
+          >
+            <View style={[styles.ctaIcon, { backgroundColor: palette.solid }]}>
+              <Ionicons name="bandage-outline" size={20} color={colors.white} />
+            </View>
+            <View style={styles.ctaText}>
+              <Text style={[styles.ctaTitle, { color: palette.onTint }]}>Prescrire un pansement</Text>
+              <Text style={styles.ctaSub}>
+                Conseil de plaie → choix du pansement → résumé et cases à cocher
+              </Text>
+            </View>
+            <Ionicons name="arrow-forward" size={18} color={palette.solid} />
+          </PressableScale>
+        ) : null}
+
         <SectionHeader
           label="Rubriques"
           hint={
             sousGroupes
               ? 'Sous-groupes d’affichage — le domaine légal reste l’Art. 1-V.'
-              : 'Ouvrez une rubrique pour les conditions, obligations et libellés à copier.'
+              : domaineId === 'II'
+                ? 'Ou commencez par le parcours pansements ci-dessus.'
+                : 'Ouvrez une rubrique pour les conditions, obligations et libellés à copier.'
           }
         />
 
@@ -436,6 +458,25 @@ const styles = StyleSheet.create({
   heroStatLabel: { color: 'rgba(255,255,255,0.72)', fontSize: 11, fontWeight: '700' },
   heroDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,0.2)' },
   body: { padding: spacing.md, gap: spacing.sm },
+  ctaPansement: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    ...shadow.card,
+  },
+  ctaIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaText: { flex: 1, gap: 2 },
+  ctaTitle: { fontSize: 15, fontWeight: '800' },
+  ctaSub: { color: colors.muted, fontSize: 12.5, lineHeight: 17, fontWeight: '600' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   section: { gap: spacing.sm },
   sectionHead: {

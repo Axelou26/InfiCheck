@@ -116,16 +116,17 @@
   {
     "id": "plaie-pansements",
     "domaine": "II",
-    "titre": "Pansements (pour 7 jours)",
-    "description": "Prescrire les pansements autorisés, pour 7 jours maximum au départ.",
+    "titre": "Pansements (prescription 7 jours)",
+    "description": "Prescrire les pansements autorisés pour une durée initiale de 7 jours. Au-delà, le suivi médical s’impose : cet alinéa ne prévoit pas un renouvellement IDE illimité.",
     "modalite": "prescrire",
     "categorie": "dm",
     "conditions": [
       "À qui : patient nécessitant un pansement dans le cadre de la prévention ou du traitement de la plaie. Pas de restriction d’âge dans l’arrêté",
       "Prescrire (1re intention) : uniquement les produits de la liste a à v (voir exemples sur cette fiche)",
-      "Durée : sept jours (durée initiale prévue par l’arrêté) — pas un renouvellement illimité au titre de cet alinéa",
-      "Interdit : un pansement hors liste ; une durée initiale autre que 7 jours",
-      "Cet alinéa ne dit pas « renouvellement » : au-delà de la durée initiale, le suivi médical s’impose"
+      "Durée de la prescription IDE : 7 jours (durée initiale prévue par l’arrêté)",
+      "Sur ces 7 jours : prévoyez assez de pansements pour le rythme de soins (ce n’est pas « un seul pansement »)",
+      "Au-delà de 7 jours : cet alinéa ne dit pas « renouvellement » — le suivi médical s’impose (pas un renouvellement IDE illimité au titre de cet alinéa)",
+      "Interdit : un pansement hors liste ; une durée initiale autre que 7 jours"
     ],
     "obligations": [
       "Inscription au dossier patient ou DMP (Art. 2)"

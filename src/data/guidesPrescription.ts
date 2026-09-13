@@ -30,12 +30,13 @@ export type PrescriptionGuide = {
   resolve: (situationId: string) => GuideSuggestion;
 };
 
-const DUREE_PANSEMENTS = 'Durée initiale : 7 jours (Art. 1-II) — au-delà, suivi médical.';
+const DUREE_PANSEMENTS =
+  'Prescription IDE : 7 jours (durée initiale Art. 1-II). Prévoir assez de pansements pour le rythme de soins. Au-delà : suivi médical — pas un renouvellement IDE illimité au titre de cet alinéa.';
 
 export const GUIDE_PANSEMENTS: PrescriptionGuide = {
   itemId: 'plaie-pansements',
-  titre: 'Guide pansements',
-  sousTitre: 'Selon l’aspect et l’exsudat de la plaie',
+  titre: 'Parcours pansements',
+  sousTitre: 'Plaie → choix → résumé',
   question: 'Quel est le profil de la plaie ?',
   situations: [
     {

@@ -357,18 +357,21 @@ export function GhostButton({
   onPress,
   color = colors.primary,
   style,
+  disabled,
 }: {
   label: string;
   icon?: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
   color?: string;
   style?: StyleProp<ViewStyle>;
+  disabled?: boolean;
 }) {
   return (
     <PressableScale
       onPress={onPress}
+      disabled={disabled}
       accessibilityLabel={label}
-      style={[styles.ghostButton, { borderColor: color }, style]}
+      style={[styles.ghostButton, { borderColor: color }, style, disabled && styles.disabled]}
     >
       {icon ? <Ionicons name={icon} size={17} color={color} /> : null}
       <Text style={[styles.ghostButtonText, { color }]}>{label}</Text>
