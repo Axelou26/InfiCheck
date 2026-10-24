@@ -2,9 +2,9 @@
   "importedAt": "2026-08-23",
   "cisCount": 15857,
   "commercializedApprox": 15857,
-  "eligibleIdeApprox": 506,
-  "eligibleIdeOui": 418,
-  "eligibleIdeConditions": 88,
+  "eligibleIdeApprox": 573,
+  "eligibleIdeOui": 448,
+  "eligibleIdeConditions": 125,
   "source": "https://base-donnees-publique.medicaments.gouv.fr/telechargement",
   "files": [
     "CIS_bdpm.txt",
@@ -33,6 +33,6 @@
     "infosImportantes": 11347
   },
   "dbFile": "assets/bdpm/inficheck.db",
-  "catalogVersion": "2026-09-13-pansements",
+  "catalogVersion": "2026-10-24-vaccins",
   "licenseNote": "Licence Ouverte — citer BDPM et la date de mise à jour. Ne pas dénaturer les données."
 }

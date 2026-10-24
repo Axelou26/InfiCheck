@@ -2,21 +2,19 @@ import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AntalgiqueCalculator } from '../components/AntalgiqueCalculator';
-import { CommentPrescrire } from '../components/CommentPrescrire';
 import { FavoriteToggle } from '../components/FavoriteToggle';
 import { FicheChecklist } from '../components/FicheChecklist';
 import { GuidePrescription } from '../components/GuidePrescription';
-import { MedIdentity } from '../components/MedIdentity';
+import { MedGroupList } from '../components/MedGroupList';
 import { ModalityBadge } from '../components/ModalityBadge';
 import { BackButton } from '../components/NavChrome';
 import { PansementParcours } from '../components/PansementParcours';
 import { Collapsible, SearchField } from '../components/controls';
 import {
-  GhostButton,
   PressableScale,
   SectionHeader,
   Skeleton,
@@ -25,8 +23,13 @@ import {
 } from '../components/ui';
 import { getDomaine } from '../data/arreteCatalog';
 import { EXEMPLES_ORDONNANCE } from '../data/exemplesOrdonnance';
-import { getGuideForItem } from '../data/guidesPrescription';
-import { getItemById, getMedicamentsByItemId } from '../db/database';
+import { getGuideForItem, vaccinCorrespondAuChoix } from '../data/guidesPrescription';
+import {
+  countMedicamentsByItemId,
+  getItemById,
+  getMedicamentsByItemId,
+  type MedAvailability,
+} from '../db/database';
 import type { RootStackParamList } from '../navigation/types';
 import { TAB_BAR_CLEARANCE } from '../navigation/TabBar';
 import { pushRecent } from '../storage/library';
@@ -41,8 +44,13 @@ export function ItemDetailScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [item, setItem] = useState<ArreteItem | null>(null);
   const [meds, setMeds] = useState<BdpmMedicament[]>([]);
-  const [medTotal, setMedTotal] = useState(0);
   const [medQuery, setMedQuery] = useState('');
+  const [medAvailability, setMedAvailability] = useState<MedAvailability>({
+    total: 0,
+    commercialisees: 0,
+  });
+  const [showRetired, setShowRetired] = useState(false);
+  const [guideSituation, setGuideSituation] = useState('');
   const [medsLoading, setMedsLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -50,6 +58,8 @@ export function ItemDetailScreen({ route, navigation }: Props) {
   useEffect(() => {
     const id = route.params.itemId;
     setMedQuery('');
+    setShowRetired(false);
+    setGuideSituation('');
     getItemById(id).then((found) => {
       setItem(found);
       if (found) {
@@ -70,11 +80,16 @@ export function ItemDetailScreen({ route, navigation }: Props) {
     let cancelled = false;
     setMedsLoading(true);
     const timer = setTimeout(() => {
-      getMedicamentsByItemId(id, 80, medQuery)
-        .then((list) => {
+      countMedicamentsByItemId(id)
+        .then((counts) => {
           if (cancelled) return;
+          setMedAvailability(counts);
+          const onlyCommercial = !showRetired && counts.commercialisees > 0;
+          return getMedicamentsByItemId(id, 80, medQuery, { commercialise: onlyCommercial });
+        })
+        .then((list) => {
+          if (cancelled || !list) return;
           setMeds(list);
-          if (medQuery.trim().length < 2) setMedTotal(list.length);
         })
         .finally(() => {
           if (!cancelled) setMedsLoading(false);
@@ -84,7 +99,7 @@ export function ItemDetailScreen({ route, navigation }: Props) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [route.params.itemId, medQuery]);
+  }, [route.params.itemId, medQuery, showRetired]);
 
   useEffect(
     () => () => {
@@ -92,6 +107,12 @@ export function ItemDetailScreen({ route, navigation }: Props) {
     },
     [],
   );
+
+  const filtreVaccin = item?.id === 'vac-calendrier' && guideSituation.length > 0;
+  const medsAffiches = useMemo(() => {
+    if (!filtreVaccin) return meds;
+    return meds.filter((med) => vaccinCorrespondAuChoix(guideSituation, med.nom));
+  }, [filtreVaccin, meds, guideSituation]);
 
   async function copyText(text: string) {
     await Clipboard.setStringAsync(text);
@@ -115,9 +136,17 @@ export function ItemDetailScreen({ route, navigation }: Props) {
 
   const palette = domainPalette(item.domaine);
   const meta = getDomaine(item.domaine);
+  const retiredCount = Math.max(0, medAvailability.total - medAvailability.commercialisees);
+  const listingCommercialise = !showRetired && medAvailability.commercialisees > 0;
+  const medHeadingCount = listingCommercialise
+    ? medAvailability.commercialisees
+    : medAvailability.total;
   const exemples = EXEMPLES_ORDONNANCE[item.id] ?? [];
   const guide = getGuideForItem(item.id);
   const isPansementParcours = item.id === 'plaie-pansements';
+  const situationLabel = guide?.situations.find((s) => s.id === guideSituation)?.label;
+  const listeTronquee =
+    !filtreVaccin && medQuery.trim().length < 2 && medHeadingCount > medsAffiches.length;
 
   function handleCopied(text: string) {
     setCopied(text);
@@ -172,23 +201,175 @@ export function ItemDetailScreen({ route, navigation }: Props) {
             <Text style={styles.desc}>{item.description}</Text>
           </View>
 
-          {isPansementParcours ? (
+          {!isPansementParcours ? <FicheChecklist item={item} /> : null}
+
+          {guide && !isPansementParcours ? (
             <Collapsible
-              title="Comment prescrire"
-              subtitle="Feuille, identité IDE, mentions utiles"
-              icon="create-outline"
+              title={guide.titre}
+              subtitle={guide.sousTitre}
+              icon="options-outline"
               accent={palette.solid}
               tint={palette.tint}
-              defaultOpen
             >
-              <CommentPrescrire accent={palette.solid} tint={palette.tint} />
+              <GuidePrescription
+                itemId={item.id}
+                accent={palette.solid}
+                tint={palette.tint}
+                onCopied={handleCopied}
+                onSituationChange={setGuideSituation}
+                onOpenItem={(nextId) => navigation.navigate('ItemDetail', { itemId: nextId })}
+              />
             </Collapsible>
           ) : null}
 
-          {isPansementParcours ? (
+          {item.id === 'prod-antalgiques' ? (
+            <Collapsible
+              title="Calculateur palier I"
+              subtitle="Dose, intervalle et max journalier"
+              icon="calculator-outline"
+              accent={palette.solid}
+              tint={palette.tint}
+            >
+              <AntalgiqueCalculator
+                accent={palette.solid}
+                tint={palette.tint}
+                onCopied={handleCopied}
+              />
+            </Collapsible>
+          ) : null}
+
+          <Collapsible
+            title="Obligations"
+            subtitle="Traçabilité, information, coordination"
+            icon="shield-checkmark"
+            accent={palette.solid}
+            tint={palette.tint}
+          >
+            {item.obligations.map((o) => (
+              <Bullet key={o} text={o} color={palette.solid} />
+            ))}
+          </Collapsible>
+
+          {medAvailability.total > 0 ? (
+            <Collapsible
+              title="Médicaments"
+              subtitle={
+                filtreVaccin && situationLabel
+                  ? `Pour le choix « ${situationLabel} »`
+                  : item.id === 'plaie-antiseptiques'
+                    ? 'Mêmes produits que « Sérum physio et antiseptiques » — ici, plaie récente ≤ 5 jours, hors pied diabétique'
+                    : 'Les noms possibles pour cette rubrique.'
+              }
+              icon="flask"
+              accent={palette.solid}
+              tint={palette.tint}
+            >
+              <SearchField
+                value={medQuery}
+                onChangeText={setMedQuery}
+                placeholder="Nom ou molécule…"
+              />
+              {retiredCount > 0 ? (
+                <PressableScale
+                  scaleTo={0.98}
+                  accessibilityLabel={
+                    showRetired
+                      ? 'Masquer les médicaments qui ne sont plus vendus'
+                      : 'Voir les médicaments qui ne sont plus vendus'
+                  }
+                  onPress={() => setShowRetired((value) => !value)}
+                >
+                  <Text style={styles.medSearchHint}>
+                    {showRetired
+                      ? 'Masquer ceux qui ne sont plus vendus'
+                      : `Voir ceux qui ne sont plus vendus (${retiredCount})`}
+                  </Text>
+                </PressableScale>
+              ) : null}
+              {medsLoading ? (
+                <Text style={styles.medSearchHint}>Recherche…</Text>
+              ) : medsAffiches.length === 0 ? (
+                <Text style={styles.medSearchHint}>
+                  {filtreVaccin && guideSituation === 'mineur'
+                    ? 'Hors cadre avant 11 ans — aucun vaccin à proposer ici.'
+                    : filtreVaccin
+                      ? 'Aucun vaccin pour ce choix.'
+                      : `Aucun médicament pour « ${medQuery.trim()} » dans cette rubrique.`}
+                </Text>
+              ) : (
+                <>
+                  {listeTronquee ? (
+                    <Text style={styles.medSearchHint}>
+                      La liste est longue. Cherchez le nom pour le trouver plus vite.
+                    </Text>
+                  ) : null}
+                  {medQuery.trim().length >= 2 ? (
+                    <Text style={styles.medSearchHint}>
+                      {medsAffiches.length} résultat{medsAffiches.length > 1 ? 's' : ''}
+                    </Text>
+                  ) : null}
+                  <MedGroupList
+                    meds={medsAffiches}
+                    copied={copied}
+                    accent={palette.solid}
+                    forceOpen={medQuery.trim().length >= 2}
+                    onCopy={copyText}
+                    onOpen={(id) => navigation.navigate('MedicationDetail', { medicationId: id })}
+                  />
+                </>
+              )}
+            </Collapsible>
+          ) : null}
+
+          {!isPansementParcours ? (
+            <Animated.View entering={FadeInDown.duration(320)} style={styles.block}>
+              <SectionHeader
+                label="Sur l’ordonnance"
+                hint={
+                  exemples.length > 0
+                    ? 'Le libellé à écrire, une fois le cadre vérifié. Touchez pour copier.'
+                    : undefined
+                }
+              />
+              {exemples.length === 0 ? (
+                <View style={styles.noteBox}>
+                  <Ionicons name="information-circle" size={16} color={colors.muted} />
+                  <Text style={styles.noteText}>
+                    Aucun libellé type listé pour cette rubrique — reportez-vous au texte de l’arrêté.
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.exemples}>
+                  {exemples.map((ex) => {
+                    const isCopied = copied === ex;
+                    return (
+                      <PressableScale
+                        key={ex}
+                        scaleTo={0.96}
+                        feedback="none"
+                        accessibilityLabel={`Copier ${ex}`}
+                        onPress={() => copyText(ex)}
+                        style={[
+                          styles.exemple,
+                          isCopied && { backgroundColor: palette.tint, borderColor: palette.solid },
+                        ]}
+                      >
+                        <Ionicons
+                          name={isCopied ? 'checkmark-circle' : 'copy-outline'}
+                          size={15}
+                          color={isCopied ? palette.solid : colors.mutedLight}
+                        />
+                        <Text style={styles.exempleText}>{ex}</Text>
+                      </PressableScale>
+                    );
+                  })}
+                </View>
+              )}
+            </Animated.View>
+          ) : (
             <Collapsible
               title="Parcours pansements"
-              subtitle="Plaie → choix → résumé et cases"
+              subtitle="Vérifier la plaie, puis le texte à écrire"
               icon="git-branch-outline"
               accent={palette.solid}
               tint={palette.tint}
@@ -201,193 +382,7 @@ export function ItemDetailScreen({ route, navigation }: Props) {
                 onCopied={handleCopied}
               />
             </Collapsible>
-          ) : null}
-
-          {!isPansementParcours ? (
-            <Collapsible
-              title="Comment prescrire"
-              subtitle="Feuille, identité IDE, mentions utiles"
-              icon="create-outline"
-              accent={palette.solid}
-              tint={palette.tint}
-            >
-              <CommentPrescrire accent={palette.solid} tint={palette.tint} />
-            </Collapsible>
-          ) : null}
-
-          <Collapsible
-            title="Conditions"
-            subtitle={`${item.conditions.length} point${item.conditions.length > 1 ? 's' : ''} à vérifier`}
-            icon="options"
-            accent={palette.solid}
-            tint={palette.tint}
-            defaultOpen={!isPansementParcours}
-          >
-            {item.conditions.length === 0 ? (
-              <Text style={styles.noteText}>Aucune condition particulière listée.</Text>
-            ) : (
-              item.conditions.map((c) => <Bullet key={c} text={c} color={palette.solid} />)
-            )}
-          </Collapsible>
-
-          <Collapsible
-            title="Obligations"
-            subtitle="Traçabilité, information, coordination"
-            icon="shield-checkmark"
-            accent={palette.solid}
-            tint={palette.tint}
-            defaultOpen={!isPansementParcours}
-          >
-            {item.obligations.map((o) => (
-              <Bullet key={o} text={o} color={palette.solid} />
-            ))}
-          </Collapsible>
-
-          {!isPansementParcours ? <FicheChecklist item={item} /> : null}
-
-          {item.id === 'prod-antalgiques' ? (
-            <Collapsible
-              title="Calculateur palier I"
-              subtitle="Dose, intervalle et max journalier"
-              icon="calculator-outline"
-              accent={palette.solid}
-              tint={palette.tint}
-              defaultOpen
-            >
-              <AntalgiqueCalculator
-                accent={palette.solid}
-                tint={palette.tint}
-                onCopied={handleCopied}
-              />
-            </Collapsible>
-          ) : null}
-
-          {guide && !isPansementParcours ? (
-            <Collapsible
-              title={guide.titre}
-              subtitle={guide.sousTitre}
-              icon="options-outline"
-              accent={palette.solid}
-              tint={palette.tint}
-              defaultOpen
-            >
-              <GuidePrescription
-                itemId={item.id}
-                accent={palette.solid}
-                tint={palette.tint}
-                onCopied={handleCopied}
-              />
-            </Collapsible>
-          ) : null}
-
-          {!isPansementParcours ? (
-          <Animated.View entering={FadeInDown.duration(320)} style={styles.block}>
-            <SectionHeader
-              label="À copier sur l’ordonnancier"
-              hint={
-                exemples.length > 0
-                  ? 'Touchez un libellé pour le copier dans le presse-papier.'
-                  : undefined
-              }
-            />
-            {exemples.length === 0 ? (
-              <View style={styles.noteBox}>
-                <Ionicons name="information-circle" size={16} color={colors.muted} />
-                <Text style={styles.noteText}>
-                  Aucun libellé type listé pour cette rubrique — reportez-vous au texte de l’arrêté.
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.exemples}>
-                {exemples.map((ex) => {
-                  const isCopied = copied === ex;
-                  return (
-                    <PressableScale
-                      key={ex}
-                      scaleTo={0.96}
-                      feedback="none"
-                      accessibilityLabel={`Copier ${ex}`}
-                      onPress={() => copyText(ex)}
-                      style={[
-                        styles.exemple,
-                        isCopied && { backgroundColor: palette.tint, borderColor: palette.solid },
-                      ]}
-                    >
-                      <Ionicons
-                        name={isCopied ? 'checkmark-circle' : 'copy-outline'}
-                        size={15}
-                        color={isCopied ? palette.solid : colors.mutedLight}
-                      />
-                      <Text style={styles.exempleText}>{ex}</Text>
-                    </PressableScale>
-                  );
-                })}
-              </View>
-            )}
-          </Animated.View>
-          ) : null}
-
-          {medTotal > 0 ? (
-            <Collapsible
-              title={`Spécialités BDPM (${medTotal}${medTotal >= 80 ? '+' : ''})`}
-              subtitle="Copier le nom ou ouvrir la fiche détaillée"
-              icon="flask"
-              accent={palette.solid}
-              tint={palette.tint}
-              defaultOpen
-            >
-              <SearchField
-                value={medQuery}
-                onChangeText={setMedQuery}
-                placeholder="Chercher une spécialité ou DCI…"
-              />
-              {medsLoading ? (
-                <Text style={styles.medSearchHint}>Recherche…</Text>
-              ) : meds.length === 0 ? (
-                <Text style={styles.medSearchHint}>
-                  Aucune spécialité pour « {medQuery.trim()} » dans cette rubrique.
-                </Text>
-              ) : (
-                <>
-                  {medQuery.trim().length >= 2 ? (
-                    <Text style={styles.medSearchHint}>
-                      {meds.length} résultat{meds.length > 1 ? 's' : ''}
-                    </Text>
-                  ) : null}
-                  {meds.map((med) => (
-                    <View key={med.id} style={styles.medCard}>
-                      <MedIdentity
-                        nom={med.nom}
-                        nomCommercial={med.nomCommercial}
-                        substances={med.substances}
-                        remboursable={med.remboursable}
-                        tauxRemboursement={med.tauxRemboursement}
-                        withMonogram
-                      />
-                      <View style={styles.medActions}>
-                        <GhostButton
-                          label={copied === med.nom ? 'Copié' : 'Copier'}
-                          icon={copied === med.nom ? 'checkmark' : 'copy-outline'}
-                          color={palette.solid}
-                          onPress={() => copyText(med.nom)}
-                          style={styles.medAction}
-                        />
-                        <GhostButton
-                          label="Fiche"
-                          icon="open-outline"
-                          color={colors.muted}
-                          onPress={() =>
-                            navigation.navigate('MedicationDetail', { medicationId: med.id })
-                          }
-                          style={styles.medAction}
-                        />
-                      </View>
-                    </View>
-                  ))}
-                </>
-              )}
-            </Collapsible>
-          ) : null}
+          )}
         </View>
       </Animated.ScrollView>
 
@@ -476,13 +471,5 @@ const styles = StyleSheet.create({
   bulletRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
   bulletDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7 },
   bulletText: { flex: 1, color: colors.inkSoft, fontSize: 14, lineHeight: 21 },
-  medCard: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radii.sm,
-    padding: spacing.sm,
-    gap: spacing.sm,
-  },
   medSearchHint: { color: colors.muted, fontSize: 12.5, fontWeight: '600' },
-  medActions: { flexDirection: 'row', gap: spacing.xs },
-  medAction: { flex: 1, paddingVertical: 9 },
 });

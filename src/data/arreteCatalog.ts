@@ -8,8 +8,8 @@ export const ARRETE_META = {
   jo: 'Journal officiel du 27 juin 2026, texte n° 24',
   legifrance: 'https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054321926',
   bdpm: 'https://base-donnees-publique.medicaments.gouv.fr',
-  /** Incrémenter pour forcer la resync catalogue dans la DB bundlée */
-  versionCatalog: '2026-09-06-clair',
+  /** Doit rester identique à scripts/update-catalog.mjs et assets/bdpm/meta.json */
+  versionCatalog: '2026-10-24-vaccins',
 };
 
 export const DOMAINES: DomaineMeta[] = [

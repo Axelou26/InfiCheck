@@ -20,7 +20,7 @@ import { evaluerEligibilite, NIVEAU } from './eligibility.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SKIP_DOWNLOAD = process.argv.includes('--skip-download');
 /** Doit rester aligné sur CATALOG_VERSION de update-catalog.mjs. */
-const CATALOG_VERSION = '2026-08-22-all';
+const CATALOG_VERSION = '2026-10-24-vaccins';
 const ROOT = path.resolve(__dirname, '..');
 const RAW_DIR = path.join(__dirname, 'bdpm-raw');
 const OUT_DIR = path.join(ROOT, 'assets', 'bdpm');

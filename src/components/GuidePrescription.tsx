@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { getGuideForItem } from '../data/guidesPrescription';
@@ -14,14 +14,29 @@ export function GuidePrescription({
   accent = colors.primary,
   tint = colors.primaryTint,
   onCopied,
+  onOpenItem,
+  onSituationChange,
 }: {
   itemId: string;
   accent?: string;
   tint?: string;
   onCopied?: (text: string) => void;
+  onOpenItem?: (itemId: string) => void;
+  onSituationChange?: (situationId: string) => void;
 }) {
   const guide = getGuideForItem(itemId);
   const [situationId, setSituationId] = useState(guide?.situations[0]?.id ?? '');
+  const onSituationChangeRef = useRef(onSituationChange);
+  onSituationChangeRef.current = onSituationChange;
+
+  useEffect(() => {
+    const first = guide?.situations[0]?.id ?? '';
+    setSituationId(first);
+  }, [itemId, guide]);
+
+  useEffect(() => {
+    if (situationId) onSituationChangeRef.current?.(situationId);
+  }, [situationId]);
 
   const suggestion = useMemo(() => {
     if (!guide || !situationId) return null;
@@ -145,6 +160,18 @@ export function GuidePrescription({
               </Text>
             </View>
           ))}
+
+          {suggestion.ouvrirFiche && onOpenItem ? (
+            <GhostButton
+              label={suggestion.ouvrirFiche.label}
+              icon="arrow-forward"
+              color={accent}
+              onPress={() => {
+                haptic('light');
+                onOpenItem(suggestion.ouvrirFiche!.id);
+              }}
+            />
+          ) : null}
 
           {suggestion.libelles.length > 1 ? (
             <GhostButton

@@ -4,6 +4,8 @@ import { colors, radii, typography } from '../theme';
 import {
   REMBOURSEMENT_MUTUELLE_HINT,
   hasResteAChargeAmo,
+  isCommercialise,
+  moleculesLisibles,
   remboursementLabel,
 } from '../utils/medicament';
 
@@ -90,6 +92,7 @@ export function MedIdentity({
   remboursable,
   tauxRemboursement,
   withMonogram = false,
+  etatCommercialisation,
 }: {
   nom: string;
   nomCommercial: string;
@@ -97,6 +100,7 @@ export function MedIdentity({
   remboursable: boolean;
   tauxRemboursement: string | null;
   withMonogram?: boolean;
+  etatCommercialisation?: string | null;
 }) {
   return (
     <View style={styles.wrap}>
@@ -106,10 +110,13 @@ export function MedIdentity({
         <Text style={styles.nom}>{nom}</Text>
         {substances && substances !== '—' ? (
           <Text style={styles.dci} numberOfLines={2}>
-            DCI · {substances}
+            Molécule · {moleculesLisibles(substances)}
           </Text>
         ) : null}
         <RemboursementBadge remboursable={remboursable} tauxLabel={tauxRemboursement} />
+        {etatCommercialisation && !isCommercialise(etatCommercialisation) ? (
+          <Text style={styles.retired}>Non commercialisée</Text>
+        ) : null}
       </View>
     </View>
   );
@@ -123,6 +130,7 @@ const styles = StyleSheet.create({
   commercial: { ...typography.subtitle, fontSize: 17, color: colors.ink },
   nom: { color: colors.inkSoft, fontSize: 13, lineHeight: 18 },
   dci: { color: colors.mutedLight, fontSize: 12, lineHeight: 17, fontWeight: '600' },
+  retired: { color: colors.warn, fontSize: 12, fontWeight: '800' },
   badgeBlock: { gap: 3, marginTop: 3, alignSelf: 'flex-start', maxWidth: '100%' },
   badge: {
     alignSelf: 'flex-start',

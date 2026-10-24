@@ -84,7 +84,7 @@ export const EXEMPLES_ORDONNANCE: Record<string, string[]> = {
   'tabac-bilan': [
     'Cholestérol total (bilan facteurs de risque CV)',
     'Triglycérides',
-    'Glycémie à jeun',
+    'Glycémie à jeun — bilan d’arrêt du tabac (facteurs de risque CV)',
   ],
 
   'prod-antalgiques': [
@@ -96,7 +96,7 @@ export const EXEMPLES_ORDONNANCE: Record<string, string[]> = {
     'Adaptation de posologie antalgique selon la prescription médicale initiale',
   ],
   'prod-solutions': [
-    'Chlorure de sodium 0,9 % (sérum physiologique) — PMF',
+    'Sérum physiologique (chlorure de sodium 0,9 %) — unidoses, spray ou irrigation, hors perfusion',
     'Solution stérile pour irrigation / soin',
     'Produit antiseptique',
   ],
@@ -155,7 +155,7 @@ export const EXEMPLES_ORDONNANCE: Record<string, string[]> = {
   ],
   'bio-ecbu': ['ECBU avec antibiogramme si nécessaire'],
   'bio-glycemie': [
-    'Glycémie à jeun',
+    'Glycémie à jeun — examen de laboratoire',
     'Glycémie en urgence (déséquilibre du diabète / hypoglycémie)',
   ],
   'bio-diabete': [

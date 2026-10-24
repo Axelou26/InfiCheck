@@ -230,7 +230,10 @@ export const ELIGIBILITY_RULES = [
       if (substance === 'desogestrel' || substance === 'drospirenone') return true;
       if (substance !== 'levonorgestrel') return false;
       const doses = dosesMg(med.nom);
-      return !doses.length || Math.max(...doses) < 0.7;
+      // Sans dose lisible : seul Microval (30 µg, dose absente du nom) est une pilule.
+      // Un lévonorgestrel isolé sans dose ne doit pas être classé d’office en renouvellement.
+      if (!doses.length) return /microval/.test(med.nomNorm);
+      return Math.max(...doses) < 0.7;
     },
   },
   {
@@ -252,7 +255,7 @@ export const ELIGIBILITY_RULES = [
     itemArreteId: 'prod-solutions',
     niveau: NIVEAU.CONDITIONS,
     conditionsIde:
-      'Antiseptique à large spectre sans antibiotique (Art. 1-V). Dans le cadre restreint d’une plaie récente, voir « Antiseptiques à large spectre (plaie) » (Art. 1-II-c).',
+      'Antiseptique à large spectre sans antibiotique (Art. 1-V). Pour une plaie récente (brûlure ou traumatisme souillé, 5 jours, hors pied diabétique), ouvrir aussi la fiche « Antiseptique sur plaie récente » (Art. 1-II-c).',
     substancesAutorisees: [
       'povidone iodee',
       'chlorhexidine',
@@ -283,20 +286,64 @@ export const ELIGIBILITY_RULES = [
   },
 ];
 
+const VOIES_VACCIN = new Set(['intramusculaire', 'sous-cutanee', 'intradermique']);
+
+/**
+ * Les vaccins sont injectables : ils sont classés avant l'interdiction des voies
+ * injectables, qui vise les médicaments (lidocaïne IV, poches de perfusion…).
+ * Un faux positif est écarté : homéopathie, schémas du nourrisson, fièvre jaune,
+ * rage et vaccins du voyageur ne sont pas rattachés.
+ *
+ * @param {{ nomNorm: string, voies: string[] }} med
+ * @returns {{ itemArreteId: string, niveau: string, conditionsIde: string } | null}
+ */
+function classerVaccin(med) {
+  if (/boiron|lehning|ferrier|dilution|homeopath|vaccinotoxinum|influenzinum/.test(med.nomNorm)) {
+    return null;
+  }
+  const voiesOk = med.voies.length > 0 && med.voies.every((v) => VOIES_VACCIN.has(v));
+
+  if (/comirnaty|spikevax|nuvaxovid|jcovden|vaxzevria|vidprevtyn|vaccin covid/.test(med.nomNorm)) {
+    if (!voiesOk || /3 microgrammes/.test(med.nomNorm)) return null;
+    return {
+      itemArreteId: 'vac-covid',
+      niveau: NIVEAU.OUI,
+      conditionsIde:
+        'Vaccin contre la Covid-19 — prescription IDE possible à partir de 5 ans (Art. 1-I). Vérifier la présentation (dose) selon l’âge.',
+    };
+  }
+
+  if (/efluelda|fluad|fluarix|flucelvax|influvac|vaxigrip/.test(med.nomNorm)) {
+    if (!voiesOk) return null;
+    return {
+      itemArreteId: 'vac-grippe',
+      niveau: NIVEAU.OUI,
+      conditionsIde:
+        'Vaccin grippal inactivé — prescription IDE possible à partir de 11 ans, y compris hors populations ciblées (Art. 1-I).',
+    };
+  }
+
+  const calendrier =
+    /boostrixtetra|repevax|revaxis|imovax polio|tetravac-acellulaire|gardasil|cervarix|nimenrix|menquadfi|menveo|bexsero|trumenba|neisvac|menjugate|engerix b|hbvaxpro|prevenar|pneumovax|vaxneuvance|capvaxive|priorix|m-m-rvaxpro|varivax|varilrix|shingrix|zostavax|vaccin bcg|havrix 1440|avaxim 160|vaqta|twinrix adulte|arexvy|abrysvo|mresvia/;
+  if (!calendrier.test(med.nomNorm) || !voiesOk) return null;
+  return {
+    itemArreteId: 'vac-calendrier',
+    niveau: NIVEAU.CONDITIONS,
+    conditionsIde:
+      'Vaccin du calendrier — prescription IDE à partir de 11 ans, selon les recommandations en vigueur (Art. 1-I). Vaccin vivant atténué : interdit chez l’immunodéprimé. Déclaration à l’Ordre et formation Annexe I.',
+  };
+}
+
 /**
  * @param {{ nom: string, substancesBrutes: string[], forme: string, voies: string }} spec
  * @returns {{ itemArreteId: string, niveau: string, conditionsIde: string } | null}
  */
 export function evaluerEligibilite(spec) {
   const substances = [...new Set(spec.substancesBrutes.map(canonicalSubstance).filter(Boolean))];
-  if (!substances.length) return null;
   if (substances.some((s) => ANTIBIOTIQUES.has(s))) return null;
 
   const voies = splitVoies(spec.voies);
   const formeNorm = normalize(spec.forme);
-  if (voies.some((v) => VOIES_INTERDITES.test(v))) return null;
-  if (VOIES_INTERDITES.test(formeNorm)) return null;
-
   const med = {
     nom: spec.nom,
     nomNorm: normalize(spec.nom),
@@ -304,6 +351,13 @@ export function evaluerEligibilite(spec) {
     voies,
     formeNorm,
   };
+
+  const vaccin = classerVaccin(med);
+  if (vaccin) return vaccin;
+
+  if (!substances.length) return null;
+  if (voies.some((v) => VOIES_INTERDITES.test(v))) return null;
+  if (VOIES_INTERDITES.test(formeNorm)) return null;
 
   for (const rule of ELIGIBILITY_RULES) {
     const autorisees = new Set(rule.substancesAutorisees);

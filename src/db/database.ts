@@ -21,6 +21,7 @@ import type {
   NiveauIde,
 } from '../types';
 import { extractNomCommercial, parseTauxAgg } from '../utils/medicament';
+import { containsFold, fold, sqlFold } from '../utils/text';
 
 const CATEGORIE_BY_ID = new Map(ARRETE_ITEMS.map((item) => [item.id, item.categorie]));
 
@@ -352,6 +353,33 @@ const DOMAIN_PINNED_ITEMS: Partial<Record<DomaineId, string[]>> = {
   II: ['plaie-pansements'],
 };
 
+/**
+ * Spécialités déjà classées sur une autre rubrique, à montrer aussi sur celle-ci.
+ * Les antiseptiques BDPM sont rattachés à l’Art. 1-V ; la fiche plaie (Art. 1-II-c)
+ * les affiche avec ses propres conditions (5 jours, hors pied diabétique).
+ */
+const MEDS_ALSO_FROM: Partial<Record<string, readonly string[]>> = {
+  'plaie-antiseptiques': ['prod-solutions'],
+};
+
+function sourceItemIds(itemArreteId: string): string[] {
+  return [itemArreteId, ...(MEDS_ALSO_FROM[itemArreteId] ?? [])];
+}
+
+function domaineAlsoItemIds(domaine: DomaineId): string[] {
+  const ids = new Set<string>();
+  for (const [itemId, sources] of Object.entries(MEDS_ALSO_FROM)) {
+    const item = ARRETE_ITEMS.find((entry) => entry.id === itemId);
+    if (item?.domaine !== domaine || !sources) continue;
+    for (const source of sources) ids.add(source);
+  }
+  return [...ids];
+}
+
+function sqlPlaceholders(ids: readonly string[]): string {
+  return ids.map(() => '?').join(', ');
+}
+
 export async function getItemsByDomaine(domaine: DomaineId): Promise<ArreteItem[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<ArreteRow>(
@@ -376,16 +404,24 @@ export async function getItemById(id: string): Promise<ArreteItem | null> {
   return row ? mapArrete(row) : null;
 }
 
-export async function searchArrete(query: string): Promise<ArreteItem[]> {
+function arreteHaystack(item: ArreteItem): string {
+  return [item.titre, item.description, ...item.conditions, ...item.obligations].join('\n');
+}
+
+export async function listArreteItems(): Promise<ArreteItem[]> {
   const db = await getDb();
-  const q = `%${query.trim()}%`;
   const rows = await db.getAllAsync<ArreteRow>(
-    `SELECT * FROM arrete_items
-     WHERE titre LIKE ? OR description LIKE ? OR conditions_json LIKE ? OR obligations_json LIKE ?
-     ORDER BY titre LIMIT 50`,
-    [q, q, q, q],
+    'SELECT * FROM arrete_items ORDER BY domaine, titre',
   );
   return rows.map(mapArrete);
+}
+
+export async function searchArrete(query: string): Promise<ArreteItem[]> {
+  const items = await listArreteItems();
+  return items
+    .filter((item) => containsFold(arreteHaystack(item), query))
+    .sort((a, b) => a.titre.localeCompare(b.titre, 'fr'))
+    .slice(0, 50);
 }
 
 /** `null` / omis = tous les niveaux. `liste` = oui + sous conditions. */
@@ -470,6 +506,25 @@ function medOrderClause(opts: MedQueryOptions = {}): string {
   return `m.eligible_ide DESC, ${TRI_COMMERCIALISEES}, m.nom`;
 }
 
+function medTextMatchSql(): string {
+  return `(${sqlFold('m.nom')} LIKE ? OR ${sqlFold('m.substances')} LIKE ? OR ${sqlFold('m.resume')} LIKE ?)`;
+}
+
+function commercialiseSql(commercialise?: boolean): string {
+  return commercialise ? `AND m.etat_commercialisation LIKE 'Commercialis%'` : '';
+}
+
+export type MedAvailability = { total: number; commercialisees: number };
+
+function mapAvailability(
+  row: { total: number; commercialisees: number | null } | null,
+): MedAvailability {
+  return {
+    total: row?.total ?? 0,
+    commercialisees: row?.commercialisees ?? 0,
+  };
+}
+
 function normalizeMedOpts(
   niveauOrOpts?: NiveauIde | 'liste' | null | MedQueryOptions,
 ): MedQueryOptions {
@@ -484,11 +539,11 @@ export async function searchMedicaments(
 ): Promise<BdpmMedicament[]> {
   const opts = normalizeMedOpts(niveauOrOpts);
   const db = await getDb();
-  const q = `%${query.trim()}%`;
+  const q = `%${fold(query.trim())}%`;
   const rows = await db.getAllAsync<MedRow>(
     `SELECT ${MED_SELECT}
      FROM medicaments m
-     WHERE (m.nom LIKE ? OR m.substances LIKE ? OR m.resume LIKE ?)
+     WHERE ${medTextMatchSql()}
        ${medFilterClauses(opts)}
      ORDER BY ${medOrderClause(opts)} LIMIT 80`,
     [q, q, q],
@@ -750,61 +805,97 @@ export async function getMedicamentsByItemId(
   itemArreteId: string,
   limit = 40,
   query?: string,
+  opts?: { commercialise?: boolean },
 ): Promise<BdpmMedicament[]> {
   const db = await getDb();
+  const ids = sourceItemIds(itemArreteId);
+  const idSql = sqlPlaceholders(ids);
+  const stock = commercialiseSql(opts?.commercialise);
   const needle = query?.trim() ?? '';
   if (needle.length >= 2) {
-    const q = `%${needle}%`;
+    const q = `%${fold(needle)}%`;
     const rows = await db.getAllAsync<MedRow>(
       `SELECT ${MED_SELECT}
        FROM medicaments m
-       WHERE m.item_arrete_id = ? AND m.eligible_ide = 1
-         AND (m.nom LIKE ? OR m.substances LIKE ? OR m.resume LIKE ?)
+       WHERE m.item_arrete_id IN (${idSql}) AND m.eligible_ide = 1
+         ${stock}
+         AND ${medTextMatchSql()}
        ORDER BY ${TRI_COMMERCIALISEES}, m.nom
        LIMIT ?`,
-      [itemArreteId, q, q, q, limit],
+      [...ids, q, q, q, limit],
     );
     return rows.map(mapMed);
   }
   const rows = await db.getAllAsync<MedRow>(
     `SELECT ${MED_SELECT}
      FROM medicaments m
-     WHERE m.item_arrete_id = ? AND m.eligible_ide = 1
+     WHERE m.item_arrete_id IN (${idSql}) AND m.eligible_ide = 1
+       ${stock}
      ORDER BY ${TRI_COMMERCIALISEES}, m.nom
      LIMIT ?`,
-    [itemArreteId, limit],
+    [...ids, limit],
   );
   return rows.map(mapMed);
 }
 
-export async function countMedicamentsByItemId(itemArreteId: string): Promise<number> {
+export async function countMedicamentsByItemId(itemArreteId: string): Promise<MedAvailability> {
   const db = await getDb();
-  const row = await db.getFirstAsync<{ c: number }>(
-    `SELECT COUNT(*) as c FROM medicaments
-     WHERE item_arrete_id = ? AND eligible_ide = 1`,
-    [itemArreteId],
+  const ids = sourceItemIds(itemArreteId);
+  const row = await db.getFirstAsync<{ total: number; commercialisees: number | null }>(
+    `SELECT COUNT(*) AS total,
+            SUM(CASE WHEN etat_commercialisation LIKE 'Commercialis%' THEN 1 ELSE 0 END) AS commercialisees
+     FROM medicaments
+     WHERE item_arrete_id IN (${sqlPlaceholders(ids)}) AND eligible_ide = 1`,
+    ids,
   );
-  return row?.c ?? 0;
+  return mapAvailability(row);
+}
+
+function domaineScope(domaine: DomaineId): { sql: string; params: string[] } {
+  const also = domaineAlsoItemIds(domaine);
+  if (also.length === 0) return { sql: 'a.domaine = ?', params: [domaine] };
+  return {
+    sql: `(a.domaine = ? OR m.item_arrete_id IN (${sqlPlaceholders(also)}))`,
+    params: [domaine, ...also],
+  };
+}
+
+export async function countMedicamentsByDomaine(domaine: DomaineId): Promise<MedAvailability> {
+  const db = await getDb();
+  const scope = domaineScope(domaine);
+  const row = await db.getFirstAsync<{ total: number; commercialisees: number | null }>(
+    `SELECT COUNT(*) AS total,
+            SUM(CASE WHEN m.etat_commercialisation LIKE 'Commercialis%' THEN 1 ELSE 0 END) AS commercialisees
+     FROM medicaments m
+     INNER JOIN arrete_items a ON a.id = m.item_arrete_id
+     WHERE ${scope.sql} AND m.eligible_ide = 1`,
+    scope.params,
+  );
+  return mapAvailability(row);
 }
 
 export async function getMedicamentsByDomaine(
   domaine: DomaineId,
   limit = 60,
   query?: string,
+  opts?: { commercialise?: boolean },
 ): Promise<BdpmMedicament[]> {
   const db = await getDb();
+  const scope = domaineScope(domaine);
+  const stock = commercialiseSql(opts?.commercialise);
   const needle = query?.trim() ?? '';
   if (needle.length >= 2) {
-    const q = `%${needle}%`;
+    const q = `%${fold(needle)}%`;
     const rows = await db.getAllAsync<MedRow>(
       `SELECT ${MED_SELECT}
        FROM medicaments m
        INNER JOIN arrete_items a ON a.id = m.item_arrete_id
-       WHERE a.domaine = ? AND m.eligible_ide = 1
-         AND (m.nom LIKE ? OR m.substances LIKE ? OR m.resume LIKE ?)
+       WHERE ${scope.sql} AND m.eligible_ide = 1
+         ${stock}
+         AND ${medTextMatchSql()}
        ORDER BY ${TRI_COMMERCIALISEES}, m.nom
        LIMIT ?`,
-      [domaine, q, q, q, limit],
+      [...scope.params, q, q, q, limit],
     );
     return rows.map(mapMed);
   }
@@ -812,10 +903,11 @@ export async function getMedicamentsByDomaine(
     `SELECT ${MED_SELECT}
      FROM medicaments m
      INNER JOIN arrete_items a ON a.id = m.item_arrete_id
-     WHERE a.domaine = ? AND m.eligible_ide = 1
+     WHERE ${scope.sql} AND m.eligible_ide = 1
+       ${stock}
      ORDER BY ${TRI_COMMERCIALISEES}, m.nom
      LIMIT ?`,
-    [domaine, limit],
+    [...scope.params, limit],
   );
   return rows.map(mapMed);
 }

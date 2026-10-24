@@ -38,6 +38,19 @@ const DOIT_ETRE_RATTACHE = [
   ['DAKIN COOPER', 'prod-solutions'],
   ['AMUKINE', 'prod-solutions'],
   ['HEXOMEDINE 1 POUR MILLE', 'prod-solutions'],
+  ['VAXIGRIPTETRA', 'vac-grippe'],
+  ['EFLUELDA', 'vac-grippe'],
+  ['INFLUVAC', 'vac-grippe'],
+  ['COMIRNATY 30 microgrammes', 'vac-covid'],
+  ['COMIRNATY JN.1 10 microgrammes', 'vac-covid'],
+  ['SPIKEVAX', 'vac-covid'],
+  ['GARDASIL 9', 'vac-calendrier'],
+  ['REPEVAX', 'vac-calendrier'],
+  ['REVAXIS', 'vac-calendrier'],
+  ['PREVENAR 20', 'vac-calendrier'],
+  ['SHINGRIX', 'vac-calendrier'],
+  ['NIMENRIX', 'vac-calendrier'],
+  ['PRIORIX', 'vac-calendrier'],
 ];
 
 /** Spécialités qui ne doivent jamais apparaître comme prescriptibles par l'IDE. */
@@ -83,6 +96,20 @@ const NE_DOIT_PAS_ETRE_RATTACHE = [
   ['ENCALLIK', 'contient un antibiotique'],
   ['TRUE TEST', 'patch de tests épicutanés'],
   ['LIDOCAINE AGUETTANT', 'forme injectable'],
+  ['COMIRNATY 3 microgrammes', 'présentation Covid de moins de 5 ans'],
+  ['JN.1 3 microgrammes', 'présentation Covid de moins de 5 ans'],
+  ['LP.8.1 3 microgrammes', 'présentation Covid de moins de 5 ans'],
+  ['XBB.1.5 3 microgrammes', 'présentation Covid de moins de 5 ans'],
+  ['INFLUENZINUM', 'homéopathie, pas le vaccin grippal'],
+  ['VACCINOTOXINUM', 'homéopathie'],
+  ['STAMARIL', 'fièvre jaune, centre habilité'],
+  ['HEXYON', 'schéma du nourrisson'],
+  ['ROTARIX', 'schéma du nourrisson'],
+  ['RABIPUR', 'rage, centre antirabique'],
+  ['DUKORAL', 'vaccin du voyageur'],
+  ['IXIARO', 'vaccin du voyageur'],
+  ['DENGVAXIA', 'vaccin du voyageur'],
+  ['LARMABAK', 'collyre, pas le sérum physiologique de plaie'],
 ];
 
 const SQL = await initSqlJs();
@@ -174,6 +201,21 @@ for (const r of rattachees) {
 }
 console.log(`\nSubstances canoniques rattachées : ${substancesConnues.size}`);
 console.log([...substancesConnues].sort().join(', '));
+
+const lngSansDose = evaluerEligibilite({
+  nom: 'LEVONORGESTREL SANS DOSE, comprimé',
+  substancesBrutes: ['LÉVONORGESTREL'],
+  forme: 'comprimé',
+  voies: 'orale',
+});
+if (lngSansDose) {
+  echecs.push(
+    `lévonorgestrel sans dose rattaché à ${lngSansDose.itemArreteId} — doit rester hors liste`,
+  );
+  console.log(`  KO lévonorgestrel sans dose → ${lngSansDose.itemArreteId}`);
+} else {
+  console.log('  OK lévonorgestrel sans dose écarté');
+}
 
 if (echecs.length) {
   console.error(`\n${echecs.length} cas de référence en échec :`);

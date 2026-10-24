@@ -18,9 +18,11 @@ type Props = {
   checked: boolean;
   onToggle: () => void;
   index?: number;
+  /** Déjà tenu par l’app : affiché coché, sans action. */
+  locked?: boolean;
 };
 
-export function ChecklistRow({ label, checked, onToggle, index }: Props) {
+export function ChecklistRow({ label, checked, onToggle, index, locked = false }: Props) {
   const on = useSharedValue(checked ? 1 : 0);
 
   useEffect(() => {
@@ -43,6 +45,28 @@ export function ChecklistRow({ label, checked, onToggle, index }: Props) {
     transform: [{ scale: interpolate(on.value, [0, 1], [0.4, 1]) }],
   }));
 
+  const body = (
+    <Animated.View style={[styles.row, row]}>
+      <Animated.View style={[styles.box, box]}>
+        <Animated.View style={check}>
+          <Ionicons name="checkmark" size={17} color={colors.white} />
+        </Animated.View>
+      </Animated.View>
+      <View style={styles.textWrap}>
+        {locked ? (
+          <Text style={styles.index}>Validé</Text>
+        ) : index !== undefined ? (
+          <Text style={styles.index}>Point {index + 1}</Text>
+        ) : null}
+        <Text style={[styles.label, checked && styles.labelOn]}>{label}</Text>
+      </View>
+    </Animated.View>
+  );
+
+  if (locked) {
+    return <View accessibilityLabel={`Validé. ${label}`}>{body}</View>;
+  }
+
   return (
     <PressableScale
       onPress={() => {
@@ -54,17 +78,7 @@ export function ChecklistRow({ label, checked, onToggle, index }: Props) {
       accessibilityRole="checkbox"
       accessibilityLabel={label}
     >
-      <Animated.View style={[styles.row, row]}>
-        <Animated.View style={[styles.box, box]}>
-          <Animated.View style={check}>
-            <Ionicons name="checkmark" size={17} color={colors.white} />
-          </Animated.View>
-        </Animated.View>
-        <View style={styles.textWrap}>
-          {index !== undefined ? <Text style={styles.index}>Point {index + 1}</Text> : null}
-          <Text style={[styles.label, checked && styles.labelOn]}>{label}</Text>
-        </View>
-      </Animated.View>
+      {body}
     </PressableScale>
   );
 }

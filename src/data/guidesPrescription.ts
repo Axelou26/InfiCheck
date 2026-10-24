@@ -14,11 +14,15 @@ export type GuideSuggestion = {
   titre: string;
   resume: string;
   libelles: string[];
+  /** Sous-ensemble de `libelles` à mettre en avant pour cette situation. */
+  proposes?: string[];
   duree?: string;
   notes: string[];
   alertes: string[];
   /** Si false : hors cadre / ne pas prescrire au titre de cette fiche. */
   autorise?: boolean;
+  /** Ouvre une autre fiche de l’arrêté. */
+  ouvrirFiche?: { id: string; label: string };
 };
 
 export type PrescriptionGuide = {
@@ -94,6 +98,10 @@ export const GUIDE_PANSEMENTS: PrescriptionGuide = {
             'Films adhésifs semi-perméables, filets / jerseys tubulaires',
             'Sparadraps, bandes de crêpe / extensibles, sets pour plaies',
           ],
+          proposes: [
+            'Pansements adhésifs stériles avec compresse intégrée — durée initiale 7 jours',
+            'Compresses stériles de coton hydrophile (adhésives ou non adhérentes)',
+          ],
           duree: DUREE_PANSEMENTS,
           notes: [
             'Adapter la taille au pourtour de la plaie.',
@@ -112,6 +120,11 @@ export const GUIDE_PANSEMENTS: PrescriptionGuide = {
             'Pansements à l’acide hyaluronique',
             'Pansements vaselinés / irrigo-absorbants',
           ],
+          proposes: [
+            'Pansements hydrocolloïdes',
+            'Pansements interfaces (silicone / CMC)',
+            'Pansements hydrogels',
+          ],
           duree: DUREE_PANSEMENTS,
           notes: [
             'Éviter un pansement trop absorbant sur une plaie sèche (risque d’assèchement).',
@@ -124,6 +137,12 @@ export const GUIDE_PANSEMENTS: PrescriptionGuide = {
           resume: 'Alginate, hydrofibre, hydrocellulaire ou super-absorbant.',
           libelles: [
             'Pansements / compresses absorbants non adhérents pour plaies productives',
+            'Pansements alginates',
+            'Pansements hydrofibres / fibres à haut pouvoir d’absorption',
+            'Pansements hydrocellulaires',
+            'Pansements super-absorbants',
+          ],
+          proposes: [
             'Pansements alginates',
             'Pansements hydrofibres / fibres à haut pouvoir d’absorption',
             'Pansements hydrocellulaires',
@@ -145,6 +164,7 @@ export const GUIDE_PANSEMENTS: PrescriptionGuide = {
             'Matériel d’aide à la détersion',
             'Pansements interfaces (silicone / CMC)',
           ],
+          proposes: ['Pansements hydrogels', 'Matériel d’aide à la détersion'],
           duree: DUREE_PANSEMENTS,
           notes: [
             'La détersion mécanique reste un acte de soin — ce guide ne couvre que la prescription de DM.',
@@ -162,6 +182,7 @@ export const GUIDE_PANSEMENTS: PrescriptionGuide = {
             'Pansements hydrocellulaires',
             'Pansements super-absorbants',
           ],
+          proposes: ['Pansements à base de charbon actif'],
           duree: DUREE_PANSEMENTS,
           notes: ['Traiter aussi la cause (exsudat, colonisation) — ne pas se limiter à l’odeur.'],
           alertes: [],
@@ -175,6 +196,7 @@ export const GUIDE_PANSEMENTS: PrescriptionGuide = {
             'Pansements hydrofibres / fibres à haut pouvoir d’absorption',
             'Pansements alginates',
           ],
+          proposes: ['Pansements à l’argent'],
           duree: DUREE_PANSEMENTS,
           notes: [
             'L’argent n’est pas un antibiotique systémique — réévaluer à 7 jours.',
@@ -193,6 +215,7 @@ export const GUIDE_PANSEMENTS: PrescriptionGuide = {
             'Compresses stériles non tissées / gaze hydrophile',
             'Champ stérile / dispositifs de rapprochement cutané adhésifs',
           ],
+          proposes: ['Produits hémostatiques (compresses de collagène)'],
           duree: DUREE_PANSEMENTS,
           notes: ['Surveiller la reprise du saignement après le soin.'],
           alertes: [
@@ -371,7 +394,7 @@ export const GUIDE_ANTISEPTIQUES: PrescriptionGuide = {
           resume: 'L’arrêté exclut explicitement la plaie du pied diabétique.',
           libelles: [],
           notes: [
-            'Pour un antiseptique hors ce cadre plaie : voir « Solutions stériles et antiseptiques » (Art. 1-V).',
+            'Pour un antiseptique hors ce cadre plaie : voir « Sérum physio et antiseptiques » (Art. 1-V).',
           ],
           alertes: [
             'Ne pas prescrire d’antiseptique au titre de l’Art. 1-II-c sur un pied diabétique.',
@@ -1302,7 +1325,7 @@ export const GUIDE_TABAC_BILAN: PrescriptionGuide = {
         libelles: [
           'Cholestérol total (bilan facteurs de risque CV)',
           'Triglycérides',
-          'Glycémie à jeun',
+          'Glycémie à jeun — bilan d’arrêt du tabac (facteurs de risque CV)',
         ],
         notes: [
           'Cadre : évaluation des facteurs de risque biologiques cardiovasculaires dans le sevrage.',
@@ -1540,9 +1563,9 @@ export const GUIDE_BIO_GLYCEMIE: PrescriptionGuide = {
     switch (situationId) {
       case 'jeun':
         return {
-          titre: 'Glycémie à jeun',
+          titre: 'Glycémie à jeun — examen de laboratoire',
           resume: 'Examen de laboratoire — pas limité aux diabétiques connus.',
-          libelles: ['Glycémie à jeun'],
+          libelles: ['Glycémie à jeun — examen de laboratoire'],
           notes: [],
           alertes: [],
         };
@@ -1636,6 +1659,220 @@ export const GUIDE_BIO_DIABETE: PrescriptionGuide = {
   },
 };
 
+export const GUIDE_VACCIN_CALENDRIER: PrescriptionGuide = {
+  itemId: 'vac-calendrier',
+  titre: 'Quel vaccin du calendrier ?',
+  sousTitre: 'Dès 11 ans — selon les recommandations en vigueur',
+  question: 'Quel est le besoin ?',
+  situations: [
+    { id: 'dtcap', label: 'Rappel coqueluche', hint: 'dTcaP', icon: 'shield-outline' },
+    { id: 'dtp', label: 'Rappel dTP', hint: 'Sans coqueluche', icon: 'shield-checkmark-outline' },
+    { id: 'hpv', label: 'HPV', hint: 'Papillomavirus', icon: 'body-outline' },
+    { id: 'meningo', label: 'Méningocoque', hint: 'ACWY ou B', icon: 'people-outline' },
+    { id: 'pneumo', label: 'Pneumocoque', hint: 'Selon le calendrier', icon: 'fitness-outline' },
+    { id: 'hepatite', label: 'Hépatites', hint: 'A, B ou A+B', icon: 'water-outline' },
+    { id: 'zona', label: 'Zona / VRS', hint: 'Adulte, sujet âgé', icon: 'hourglass-outline' },
+    { id: 'vivant', label: 'ROR / varicelle', hint: 'Vaccin vivant, BCG compris', icon: 'alert-outline' },
+    { id: 'mineur', label: 'Moins de 11 ans', hint: 'Hors cet alinéa', icon: 'close-circle-outline' },
+  ],
+  resolve(situationId) {
+    const ordre =
+      'Déclaration à l’Ordre et formation Annexe I, sauf si vous ne prescrivez que grippe et/ou Covid.';
+    switch (situationId) {
+      case 'dtcap':
+        return {
+          titre: 'Rappel diphtérie-tétanos-coqueluche-polio',
+          resume: 'Rappel de l’adulte ou de l’adolescent, avec valence coqueluche.',
+          libelles: [
+            'Vaccin diphtérique, tétanique, coquelucheux acellulaire et poliomyélitique (dTcaP) — rappel, patient ≥ 11 ans',
+          ],
+          notes: [ordre, 'Selon le schéma du calendrier en vigueur.'],
+          alertes: [],
+        };
+      case 'dtp':
+        return {
+          titre: 'Rappel diphtérie-tétanos-polio',
+          resume: 'Quand le calendrier ne demande pas la valence coqueluche.',
+          libelles: [
+            'Vaccin diphtérique, tétanique et poliomyélitique (dTP) — rappel, patient ≥ 11 ans',
+          ],
+          notes: [ordre],
+          alertes: [],
+        };
+      case 'hpv':
+        return {
+          titre: 'Papillomavirus',
+          resume: 'Selon l’âge et le schéma du calendrier (rattrapage compris).',
+          libelles: ['Vaccin papillomavirus humain — selon calendrier, patient ≥ 11 ans'],
+          notes: [ordre, 'Vérifier le nombre de doses prévu pour l’âge.'],
+          alertes: [],
+        };
+      case 'meningo':
+        return {
+          titre: 'Méningocoque',
+          resume: 'ACWY ou B, selon la recommandation qui s’applique à ce patient.',
+          libelles: [
+            'Vaccin méningococcique conjugué A, C, W, Y — selon calendrier, patient ≥ 11 ans',
+            'Vaccin méningococcique du groupe B — selon calendrier, patient ≥ 11 ans',
+          ],
+          notes: [ordre, 'Ne copier que la valence indiquée par le calendrier.'],
+          alertes: [],
+        };
+      case 'pneumo':
+        return {
+          titre: 'Pneumocoque',
+          resume: 'Sujet à risque ou âge prévu par le calendrier.',
+          libelles: ['Vaccin pneumococcique — selon calendrier, patient ≥ 11 ans'],
+          notes: [ordre, 'Ne pas changer de valence sans le schéma recommandé.'],
+          alertes: [],
+        };
+      case 'hepatite':
+        return {
+          titre: 'Hépatite A et/ou B',
+          resume: 'Selon le schéma et les recommandations du calendrier.',
+          libelles: [
+            'Vaccin hépatite B — selon calendrier, patient ≥ 11 ans',
+            'Vaccin hépatite A — selon calendrier, patient ≥ 11 ans',
+            'Vaccin hépatite A et B — selon calendrier, patient ≥ 11 ans',
+          ],
+          notes: [ordre, 'Ne copier que la valence indiquée.'],
+          alertes: [],
+        };
+      case 'zona':
+        return {
+          titre: 'Zona ou virus respiratoire syncytial',
+          resume: 'Adultes et sujets âgés, selon le calendrier en vigueur.',
+          libelles: [
+            'Vaccin zona — selon calendrier',
+            'Vaccin contre le virus respiratoire syncytial — selon calendrier (sujet âgé)',
+          ],
+          notes: [
+            ordre,
+            'Zona : le vaccin vivant atténué est interdit chez l’immunodéprimé.',
+          ],
+          alertes: [],
+        };
+      case 'vivant':
+        return {
+          titre: 'ROR ou varicelle',
+          resume: 'Rattrapage. Ce sont des vaccins vivants atténués.',
+          libelles: [
+            'Vaccin rougeole-oreillons-rubéole — rattrapage, patient ≥ 11 ans',
+            'Vaccin varicelle — selon calendrier, patient ≥ 11 ans',
+            'Vaccin BCG — selon calendrier, patient ≥ 11 ans',
+          ],
+          notes: [ordre],
+          alertes: ['Interdit : vaccin vivant atténué chez une personne immunodéprimée.'],
+        };
+      case 'mineur':
+        return {
+          titre: 'Hors cet alinéa',
+          resume: 'Le calendrier général de cette fiche commence à 11 ans.',
+          libelles: [],
+          notes: ['Covid-19 : fiche dédiée, à partir de 5 ans. Grippe : fiche dédiée, à partir de 11 ans.'],
+          alertes: ['Interdit : moins de 11 ans au titre des vaccins du calendrier.'],
+          autorise: false,
+        };
+      default:
+        return emptySuggestion();
+    }
+  },
+};
+
+export const GUIDE_SERUM: PrescriptionGuide = {
+  itemId: 'prod-solutions',
+  titre: 'Sérum ou antiseptique ?',
+  sousTitre: 'La plaie récente change de fiche',
+  question: 'Dans quel cadre ?',
+  situations: [
+    { id: 'serum', label: 'Sérum physiologique', hint: 'Unidoses, spray, irrigation', icon: 'water-outline' },
+    {
+      id: 'hors-plaie',
+      label: 'Antiseptique hors plaie',
+      hint: 'Pas une plaie récente',
+      icon: 'flask-outline',
+    },
+    {
+      id: 'plaie',
+      label: 'Plaie ≤ 5 jours',
+      hint: 'Autre fiche',
+      icon: 'bandage-outline',
+    },
+    {
+      id: 'pied',
+      label: 'Pied diabétique',
+      hint: 'Hors cadre plaie',
+      icon: 'close-circle-outline',
+    },
+    {
+      id: 'perfusion',
+      label: 'Poche de perfusion',
+      hint: 'Hors liste',
+      icon: 'medkit-outline',
+    },
+  ],
+  resolve(situationId) {
+    switch (situationId) {
+      case 'serum':
+        return {
+          titre: 'Sérum physiologique',
+          resume: 'Prescription médicale facultative : unidoses, spray ou irrigation.',
+          libelles: [
+            'Sérum physiologique (chlorure de sodium 0,9 %) — unidoses, spray ou irrigation, hors perfusion',
+          ],
+          notes: [
+            'Ces unidoses ne sont en général pas des spécialités de la base médicaments : prescrire par ce libellé.',
+          ],
+          alertes: [],
+        };
+      case 'hors-plaie':
+        return {
+          titre: 'Antiseptique hors plaie récente',
+          resume: 'Cadre Art. 1-V. Sans antibiotique.',
+          libelles: ['Antiseptique à large spectre — sans antibiotique, hors plaie récente'],
+          notes: ['Pas de produit contenant un antibiotique.'],
+          alertes: [],
+        };
+      case 'plaie':
+        return {
+          titre: 'Ouvrir la fiche plaie',
+          resume:
+            'Brûlure ou plaie traumatique souillée, dans les 5 premiers jours : les règles de l’Art. 1-II-c s’appliquent.',
+          libelles: [],
+          notes: ['Les mêmes spécialités sont listées sur la fiche plaie, avec la règle des 5 jours.'],
+          alertes: ['Ne pas prescrire cet antiseptique au seul titre de la fiche sérum.'],
+          autorise: false,
+          ouvrirFiche: {
+            id: 'plaie-antiseptiques',
+            label: 'Ouvrir Antiseptique sur plaie récente',
+          },
+        };
+      case 'pied':
+        return {
+          titre: 'Hors cadre',
+          resume: 'La plaie du pied diabétique est exclue de l’antiseptique de plaie récente.',
+          libelles: [],
+          notes: [],
+          alertes: [
+            'Ne pas prescrire d’antiseptique pour une plaie du pied diabétique au titre de l’arrêté.',
+          ],
+          autorise: false,
+        };
+      case 'perfusion':
+        return {
+          titre: 'Hors liste',
+          resume: 'Les poches et ampoules injectables ne sont pas le sérum physiologique PMF.',
+          libelles: [],
+          notes: [],
+          alertes: ['Interdit : chlorure de sodium pour perfusion ou injection au titre de cet alinéa.'],
+          autorise: false,
+        };
+      default:
+        return emptySuggestion();
+    }
+  },
+};
+
 function emptySuggestion(): GuideSuggestion {
   return {
     titre: 'Situation non reconnue',
@@ -1667,6 +1904,8 @@ export const GUIDES: PrescriptionGuide[] = [
   GUIDE_BIO_ECBU,
   GUIDE_BIO_GLYCEMIE,
   GUIDE_BIO_DIABETE,
+  GUIDE_VACCIN_CALENDRIER,
+  GUIDE_SERUM,
 ];
 
 export const GUIDE_BY_ITEM_ID: Record<string, PrescriptionGuide> = Object.fromEntries(
@@ -1675,4 +1914,24 @@ export const GUIDE_BY_ITEM_ID: Record<string, PrescriptionGuide> = Object.fromEn
 
 export function getGuideForItem(itemId: string): PrescriptionGuide | undefined {
   return GUIDE_BY_ITEM_ID[itemId];
+}
+
+/** Spécialités du calendrier affichées pour un choix du guide. `null` = pas de filtre. */
+const VACCIN_SITUATION_MOTIF: Record<string, RegExp | 'aucun'> = {
+  dtcap: /boostrixtetra|repevax|tetravac/,
+  dtp: /revaxis|imovax polio/,
+  hpv: /gardasil|cervarix/,
+  meningo: /nimenrix|menquadfi|menveo|bexsero|trumenba|neisvac|menjugate/,
+  pneumo: /prevenar|pneumovax|vaxneuvance|capvaxive/,
+  hepatite: /engerix|hbvaxpro|havrix|avaxim|vaqta|twinrix/,
+  zona: /shingrix|zostavax|arexvy|abrysvo|mresvia/,
+  vivant: /priorix|m-m-rvaxpro|varivax|varilrix|vaccin bcg/,
+  mineur: 'aucun',
+};
+
+export function vaccinCorrespondAuChoix(situationId: string, nom: string): boolean {
+  const motif = VACCIN_SITUATION_MOTIF[situationId];
+  if (!motif) return true;
+  if (motif === 'aucun') return false;
+  return motif.test(nom.toLowerCase());
 }

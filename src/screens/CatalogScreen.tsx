@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { ModalityBadge } from '../components/ModalityBadge';
@@ -10,10 +10,12 @@ import { FilterChip, SearchField, SegmentedControl } from '../components/control
 import { EmptyState, PressableScale, SectionHeader } from '../components/ui';
 import { TabRootHeader } from '../components/NavChrome';
 import { ARRETE_ITEMS, DOMAINES } from '../data/arreteCatalog';
+import { listArreteItems } from '../db/database';
+import { containsFold } from '../utils/text';
 import type { RootStackParamList } from '../navigation/types';
 import { TAB_BAR_CLEARANCE } from '../navigation/TabBar';
 import { colors, domainPalette, radii, shadow, spacing, typography } from '../theme';
-import type { DomaineId, ItemCategorie, Modalite } from '../types';
+import type { ArreteItem, DomaineId, ItemCategorie, Modalite } from '../types';
 
 type Vue = 'domaines' | 'rubriques';
 type DomaineFiltre = 'tous' | DomaineId;
@@ -43,33 +45,45 @@ export function CatalogScreen() {
   const [domaineFiltre, setDomaineFiltre] = useState<DomaineFiltre>('tous');
   const [modaliteFiltre, setModaliteFiltre] = useState<ModaliteFiltre>('toutes');
   const [categorieFiltre, setCategorieFiltre] = useState<CategorieFiltre>('toutes');
+  const [items, setItems] = useState<ArreteItem[]>(ARRETE_ITEMS);
+
+  useEffect(() => {
+    let cancelled = false;
+    listArreteItems()
+      .then((rows) => {
+        if (!cancelled && rows.length > 0) setItems(rows);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const countByDomain = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const item of ARRETE_ITEMS) {
+    for (const item of items) {
       counts.set(item.domaine, (counts.get(item.domaine) ?? 0) + 1);
     }
     return counts;
-  }, []);
+  }, [items]);
 
   const filtreActif =
     domaineFiltre !== 'tous' || modaliteFiltre !== 'toutes' || categorieFiltre !== 'toutes';
 
   const rubriques = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return [...ARRETE_ITEMS]
+    return [...items]
       .filter((item) => {
         if (domaineFiltre !== 'tous' && item.domaine !== domaineFiltre) return false;
         if (!matchesModalite(item.modalite, modaliteFiltre)) return false;
         if (categorieFiltre !== 'toutes' && item.categorie !== categorieFiltre) return false;
-        if (needle.length < 2) return true;
-        return (
-          item.titre.toLowerCase().includes(needle) ||
-          item.description.toLowerCase().includes(needle)
+        if (query.trim().length < 2) return true;
+        return containsFold(
+          [item.titre, item.description, ...item.conditions, ...item.obligations].join('\n'),
+          query,
         );
       })
       .sort((a, b) => a.domaine.localeCompare(b.domaine) || a.titre.localeCompare(b.titre, 'fr'));
-  }, [query, domaineFiltre, modaliteFiltre, categorieFiltre]);
+  }, [items, query, domaineFiltre, modaliteFiltre, categorieFiltre]);
 
   function resetFiltres() {
     setDomaineFiltre('tous');
@@ -99,7 +113,7 @@ export function CatalogScreen() {
         onChange={setVue}
         options={[
           { value: 'domaines', label: 'Domaines', count: DOMAINES.length },
-          { value: 'rubriques', label: 'Rubriques', count: ARRETE_ITEMS.length },
+          { value: 'rubriques', label: 'Rubriques', count: items.length },
         ]}
       />
 
@@ -173,7 +187,7 @@ export function CatalogScreen() {
                 label="Tous"
                 active={domaineFiltre === 'tous'}
                 onPress={() => setDomaineFiltre('tous')}
-                count={ARRETE_ITEMS.length}
+                count={items.length}
               />
               {DOMAINES.map((d) => {
                 const palette = domainPalette(d.id);

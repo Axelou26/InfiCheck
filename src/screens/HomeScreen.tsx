@@ -58,7 +58,7 @@ const SUGGESTIONS = [
 ];
 
 const STEPS: { icon: keyof typeof Ionicons.glyphMap; title: string; body: string }[] = [
-  { icon: 'search', title: 'Cherchez', body: 'Deux lettres suffisent : DCI, nom commercial ou mot de l’arrêté.' },
+  { icon: 'search', title: 'Cherchez', body: 'Deux lettres suffisent : un nom de médicament ou un mot de l’arrêté.' },
   { icon: 'shield-checkmark', title: 'Vérifiez', body: 'Éligibilité IDE, conditions, obligations — et le libellé à recopier.' },
   { icon: 'star', title: 'Étoilez', body: 'Vos fiches du quotidien remontent ici, prêtes pour la prochaine tournée.' },
 ];
@@ -181,7 +181,7 @@ export function HomeScreen() {
                 options={[
                   { value: 'tout', label: 'Tout', count: arrete.length + meds.length },
                   { value: 'arrete', label: 'Arrêté', count: arrete.length },
-                  { value: 'meds', label: 'BDPM', count: meds.length },
+                  { value: 'meds', label: 'Médicaments', count: meds.length },
                 ]}
               />
               {showMedFilters ? (
@@ -233,8 +233,8 @@ export function HomeScreen() {
               title="Aucun résultat"
               body={
                 medAttrCount > 0
-                  ? `Rien pour « ${query.trim()} » avec ces filtres. Élargissez les filtres BDPM.`
-                  : `Rien pour « ${query.trim()} ». Essayez une DCI, un nom commercial ou un mot de l’arrêté.`
+                  ? `Rien pour « ${query.trim()} » avec ces filtres. Élargissez les filtres.`
+                  : `Rien pour « ${query.trim()} ». Essayez un nom de médicament ou un mot de l’arrêté.`
               }
             />
           )
@@ -320,7 +320,7 @@ function IdleHome({
       {recents.length > 0 ? (
         <View style={styles.block}>
           <SectionHeader label="Reprendre" hint="Vos dernières fiches ouvertes." />
-          {recents.slice(0, 6).map((entry, i) => (
+          {recents.slice(0, 3).map((entry, i) => (
             <Animated.View
               key={`${entry.kind}-${entry.id}`}
               entering={FadeInDown.delay(Math.min(i, 6) * 45).duration(320)}
@@ -433,7 +433,7 @@ function IdleHome({
         <StatTile
           icon="flask"
           value={eligibles}
-          label="spécialités dans la liste"
+          label="médicaments dans la liste"
           cta="Ouvrir la liste"
           accent={colors.accent}
           tint={colors.accentSoft}

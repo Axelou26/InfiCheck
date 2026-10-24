@@ -9,6 +9,7 @@
     "conditions": [
       "À qui : personnes âgées de 11 ans et plus",
       "Prescrire : tous les vaccins mentionnés au calendrier vaccinal en vigueur, selon ses recommandations (schéma, rappels, populations cibles)",
+      "Spécialités proposées : rappels et vaccins utilisables dès 11 ans (HPV, méningocoque, pneumocoque, hépatites, ROR, varicelle, zona, VRS, BCG). Ne sont pas listés : schémas du nourrisson, homéopathie, fièvre jaune, rage (centres habilités) et vaccins du voyageur",
       "Interdit : vaccins vivants atténués chez une personne immunodéprimée",
       "Interdit : moins de 11 ans au titre de cet alinéa (sauf Covid-19, voir fiche dédiée)",
       "Avant de prescrire le calendrier : déclaration à l’Ordre + formation Annexe I si elle était absente du diplôme",
@@ -35,6 +36,7 @@
     "conditions": [
       "À qui : personnes âgées de 11 ans et plus — ciblées ou non ciblées par les recommandations vaccinales",
       "Prescrire : vaccin contre la grippe saisonnière (1re intention)",
+      "Les dilutions homéopathiques (Influenzinum) ne sont pas le vaccin grippal de cet alinéa",
       "Interdit : moins de 11 ans au titre de cet alinéa",
       "Si vous ne prescrivez que grippe et/ou Covid-19 : dispense de la formation vaccinale élargie (Annexe I) — la déclaration à l’Ordre reste obligatoire"
     ],
@@ -59,6 +61,7 @@
     "conditions": [
       "À qui : personnes âgées de 5 ans et plus — ciblées ou non ciblées par les recommandations vaccinales",
       "Prescrire : vaccin contre la Covid-19 (1re intention)",
+      "Les présentations dosées à 3 microgrammes (moins de 5 ans) ne sont pas proposées",
       "Interdit : moins de 5 ans",
       "Si vous ne prescrivez que grippe et/ou Covid-19 : dispense de la formation vaccinale élargie (Annexe I) — la déclaration à l’Ordre reste obligatoire"
     ],
@@ -416,7 +419,9 @@
     "conditions": [
       "À qui : patient nécessitant une solution stérile, un antiseptique ou du sérum physiologique. Pas de restriction d’âge dans l’arrêté",
       "Prescrire (1re intention) : solutions stériles et produits antiseptiques",
-      "Sérum physiologique : à prescription médicale facultative (PMF) — vous pouvez le prescrire",
+      "Sérum physiologique : à prescription médicale facultative (PMF) — unidoses, spray ou irrigation. Le prescrire par ce libellé",
+      "Hors liste : poches et ampoules de chlorure de sodium pour perfusion ou injection",
+      "Les unidoses de sérum physiologique ne sont en général pas des spécialités de la base médicaments : pas de fiche BDPM à ouvrir",
       "Si l’antiseptique est pour une plaie récente : les règles plus strictes de l’Art. 1-II s’appliquent (5 jours, brûlure ou traumatisme souillé, hors pied diabétique, sans antibiotique)"
     ],
     "obligations": [

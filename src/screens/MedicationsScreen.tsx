@@ -99,7 +99,7 @@ export function MedicationsScreen() {
         <View style={styles.header}>
           <TabRootHeader
             title="Liste IDE"
-            subtitle="Spécialités BDPM · éligibilité prescription"
+            subtitle="Médicaments que l’infirmier peut prescrire"
             icon="flask-outline"
           />
           <View style={styles.sourceCard}>
@@ -109,7 +109,7 @@ export function MedicationsScreen() {
             <View style={styles.sourceText}>
               <Text style={styles.sourceTitle}>Base publique des médicaments</Text>
               <Text style={styles.sourceSub}>
-                <CountUp value={stats.total} style={styles.sourceStrong} /> spécialités
+                <CountUp value={stats.total} style={styles.sourceStrong} /> médicaments
                 {importedAt ? ` · import du ${importedAt}` : ''}
               </Text>
             </View>
@@ -118,7 +118,7 @@ export function MedicationsScreen() {
           <SearchField
             value={query}
             onChangeText={setQuery}
-            placeholder="Nom commercial ou substance…"
+            placeholder="Nom ou molécule…"
           />
 
           <ContentUpdateCard state={contentUpdate} compact />
@@ -140,10 +140,10 @@ export function MedicationsScreen() {
           </View>
 
           <View style={styles.attrHead}>
-            <Text style={styles.filterLabel}>Filtres BDPM</Text>
+            <Text style={styles.filterLabel}>Filtres</Text>
             {attrCount > 0 ? (
               <PressableScale
-                accessibilityLabel="Réinitialiser les filtres BDPM"
+                accessibilityLabel="Réinitialiser les filtres"
                 onPress={() => setAttrs({})}
                 scaleTo={0.95}
               >
@@ -174,8 +174,8 @@ export function MedicationsScreen() {
         ) : (
           <EmptyState
             icon="flask-outline"
-            title="Aucune spécialité"
-            body="Aucune spécialité ne correspond à ces filtres et à cette recherche."
+            title="Aucun médicament"
+            body="Aucun médicament ne correspond à ces filtres et à cette recherche."
           />
         )
       }

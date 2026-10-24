@@ -8,17 +8,30 @@ import type { ArreteItem } from '../types';
 import { ChecklistRow } from './ChecklistRow';
 import { ProgressBar, SectionHeader } from './ui';
 
-export function FicheChecklist({ item }: { item: ArreteItem }) {
+export function FicheChecklist({
+  item,
+  validatedByApp = false,
+}: {
+  item: ArreteItem;
+  /** Le parcours a déjà tenu les conditions : elles s’affichent validées. */
+  validatedByApp?: boolean;
+}) {
   const points = useMemo(() => checklistForItem(item), [item]);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
-  const count = points.filter((point) => checked[point.id]).length;
+  const count = validatedByApp
+    ? points.length
+    : points.filter((point) => checked[point.id]).length;
   const done = count === points.length && points.length > 0;
 
   return (
     <View style={styles.wrap}>
       <SectionHeader
         label="Avant de prescrire"
-        hint="Points utiles pour cette rubrique. Rien n’est enregistré."
+        hint={
+          validatedByApp
+            ? 'Le parcours a déjà validé ces conditions.'
+            : 'Conditions de la rubrique. Rien n’est enregistré.'
+        }
         trailing={
           <View style={[styles.counter, done && styles.counterDone]}>
             <Text style={[styles.counterText, done && styles.counterTextDone]}>
@@ -38,7 +51,8 @@ export function FicheChecklist({ item }: { item: ArreteItem }) {
             key={point.id}
             label={point.label}
             index={i}
-            checked={!!checked[point.id]}
+            locked={validatedByApp}
+            checked={validatedByApp || !!checked[point.id]}
             onToggle={() => setChecked((prev) => ({ ...prev, [point.id]: !prev[point.id] }))}
           />
         ))}
@@ -49,7 +63,9 @@ export function FicheChecklist({ item }: { item: ArreteItem }) {
             <Ionicons name="shield-checkmark" size={18} color={colors.ok} />
           </Animated.View>
           <Text style={styles.doneText}>
-            Garde-fous cochés. Tracez au dossier patient ou au DMP, puis jugez cliniquement.
+            {validatedByApp
+              ? 'Conditions tenues par le parcours. Tracez au dossier patient ou au DMP, puis jugez cliniquement.'
+              : 'Garde-fous cochés. Tracez au dossier patient ou au DMP, puis jugez cliniquement.'}
           </Text>
         </Animated.View>
       ) : null}

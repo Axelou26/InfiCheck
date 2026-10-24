@@ -16,7 +16,7 @@ const KEY_RECENTS = 'inficheck:recents';
 const KEY_FAVORITES = 'inficheck:favorites';
 const KEY_QUERIES = 'inficheck:search-queries';
 
-const MAX_RECENTS = 12;
+const MAX_RECENTS = 3;
 const MAX_FAVORITES = 24;
 const MAX_QUERIES = 8;
 

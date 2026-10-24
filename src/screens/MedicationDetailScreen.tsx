@@ -59,11 +59,16 @@ export function MedicationDetailScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [med, setMed] = useState<BdpmMedicamentDetail | null>(null);
   const [linked, setLinked] = useState<ArreteItem | null>(null);
+  const [woundItem, setWoundItem] = useState<ArreteItem | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    setLinked(null);
+    setWoundItem(null);
     getMedicamentDetail(route.params.medicationId).then(async (m) => {
+      if (cancelled) return;
       setMed(m);
       if (m) {
         void pushRecent({
@@ -74,10 +79,17 @@ export function MedicationDetailScreen({ route, navigation }: Props) {
           accent: eligibiliteTone(m.niveauIde).solid,
         });
       }
-      if (m?.itemArreteId) {
-        setLinked(await getItemById(m.itemArreteId));
+      const item = m?.itemArreteId ? await getItemById(m.itemArreteId) : null;
+      if (cancelled) return;
+      setLinked(item);
+      if (m?.itemArreteId === 'prod-solutions') {
+        const wound = await getItemById('plaie-antiseptiques');
+        if (!cancelled) setWoundItem(wound);
       }
     });
+    return () => {
+      cancelled = true;
+    };
   }, [route.params.medicationId]);
 
   useEffect(
@@ -191,7 +203,7 @@ export function MedicationDetailScreen({ route, navigation }: Props) {
           </View>
 
           {linked ? (
-            <Animated.View entering={FadeInDown.duration(300)}>
+            <Animated.View entering={FadeInDown.duration(300)} style={styles.linkStack}>
               <PressableScale
                 scaleTo={0.985}
                 accessibilityLabel="Voir la fiche arrêté liée"
@@ -209,6 +221,25 @@ export function MedicationDetailScreen({ route, navigation }: Props) {
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.mutedLight} />
               </PressableScale>
+              {woundItem ? (
+                <PressableScale
+                  scaleTo={0.985}
+                  accessibilityLabel="Voir la fiche plaie récente"
+                  onPress={() => navigation.navigate('ItemDetail', { itemId: woundItem.id })}
+                  style={styles.linkCard}
+                >
+                  <View style={styles.linkIcon}>
+                    <Ionicons name="bandage-outline" size={17} color={colors.primary} />
+                  </View>
+                  <View style={styles.linkText}>
+                    <Text style={styles.linkTitle}>Aussi si plaie récente ≤ 5 jours</Text>
+                    <Text style={styles.linkBody} numberOfLines={2}>
+                      {woundItem.titre}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.mutedLight} />
+                </PressableScale>
+              ) : null}
             </Animated.View>
           ) : null}
 
@@ -464,6 +495,7 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs },
   actionPrimary: { flex: 1.4 },
   actionGhost: { flex: 1 },
+  linkStack: { gap: spacing.sm },
   linkCard: {
     flexDirection: 'row',
     alignItems: 'center',

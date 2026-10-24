@@ -7,7 +7,6 @@ import { GUIDE_PANSEMENTS } from '../data/guidesPrescription';
 import { colors, radii, shadow, spacing, typography } from '../theme';
 import type { ArreteItem } from '../types';
 import { haptic } from '../utils/haptics';
-import { CommentPrescrire } from './CommentPrescrire';
 import { FicheChecklist } from './FicheChecklist';
 import { GhostButton, PressableScale } from './ui';
 
@@ -15,7 +14,7 @@ type Step = 1 | 2 | 3;
 
 /**
  * Parcours pansements en 3 étapes :
- * 1) profil de plaie → 2) choix des libellés → 3) résumé + cases à cocher.
+ * 1) profil de plaie → 2) choix des libellés → 3) résumé. Les conditions sont validées par ce parcours.
  */
 export function PansementParcours({
   item,
@@ -39,6 +38,9 @@ export function PansementParcours({
     return guide.resolve(situationId);
   }, [situationId]);
 
+  const groupes = suggestion
+    ? groupesLibelles(suggestion)
+    : { proposees: [] as string[], autres: [] as string[] };
   const bloque = suggestion?.autorise === false;
   const canGoStep2 = !!situationId && !bloque;
   const canGoStep3 = (selected.size > 0 || (suggestion?.libelles.length ?? 0) === 0) && !bloque;
@@ -64,11 +66,32 @@ export function PansementParcours({
     haptic('light');
   }
 
+  function renderLibelle(libelle: string) {
+    const on = selected.has(libelle);
+    return (
+      <PressableScale
+        key={libelle}
+        scaleTo={0.98}
+        accessibilityRole="checkbox"
+        accessibilityLabel={libelle}
+        onPress={() => toggleLibelle(libelle)}
+        style={[styles.libelleRow, on && { borderColor: accent, backgroundColor: tint }]}
+      >
+        <Ionicons
+          name={on ? 'checkbox' : 'square-outline'}
+          size={20}
+          color={on ? accent : colors.muted}
+        />
+        <Text style={styles.libelleText}>{libelle}</Text>
+      </PressableScale>
+    );
+  }
+
   async function copySelection() {
     const lines = [
       situation?.label,
-      suggestion?.duree,
       ...[...selected],
+      dureeCourte(suggestion?.duree),
     ].filter(Boolean) as string[];
     if (!lines.length) return;
     const block = lines.join('\n');
@@ -140,38 +163,28 @@ export function PansementParcours({
 
       {step === 2 && suggestion ? (
         <Animated.View key="s2" entering={FadeInRight.duration(220)} style={styles.panel}>
-          <Text style={styles.question}>Quels pansements prescrire ?</Text>
+          <Text style={styles.question}>Pansements possibles</Text>
           <Text style={styles.hint}>
             {situation?.label} — {suggestion.resume}
           </Text>
           {suggestion.duree ? (
             <View style={[styles.dureeBox, { backgroundColor: tint }]}>
               <Ionicons name="calendar-outline" size={14} color={accent} />
-              <Text style={[styles.dureeText, { color: accent }]}>{suggestion.duree}</Text>
+              <Text style={[styles.dureeText, { color: accent }]}>7 jours</Text>
             </View>
           ) : null}
-          <View style={styles.libelles}>
-            {suggestion.libelles.map((libelle) => {
-              const on = selected.has(libelle);
-              return (
-                <PressableScale
-                  key={libelle}
-                  scaleTo={0.98}
-                  accessibilityRole="checkbox"
-                  accessibilityLabel={libelle}
-                  onPress={() => toggleLibelle(libelle)}
-                  style={[styles.libelleRow, on && { borderColor: accent, backgroundColor: tint }]}
-                >
-                  <Ionicons
-                    name={on ? 'checkbox' : 'square-outline'}
-                    size={20}
-                    color={on ? accent : colors.muted}
-                  />
-                  <Text style={styles.libelleText}>{libelle}</Text>
-                </PressableScale>
-              );
-            })}
-          </View>
+          {groupes.proposees.length > 0 ? (
+            <>
+              <Text style={styles.groupLabel}>Proposé</Text>
+              <View style={styles.libelles}>{groupes.proposees.map(renderLibelle)}</View>
+            </>
+          ) : null}
+          {groupes.autres.length > 0 ? (
+            <>
+              <Text style={styles.groupLabel}>Aussi possible</Text>
+              <View style={styles.libelles}>{groupes.autres.map(renderLibelle)}</View>
+            </>
+          ) : null}
           {suggestion.notes.map((n) => (
             <View key={n} style={styles.noteRow}>
               <Ionicons name="information-circle-outline" size={14} color={colors.muted} />
@@ -187,7 +200,7 @@ export function PansementParcours({
           <View style={styles.navRow}>
             <GhostButton label="Retour" icon="arrow-back" color={colors.muted} onPress={() => go(1)} />
             <GhostButton
-              label="Résumé et cases"
+              label="Voir l’ordonnance"
               icon="arrow-forward"
               color={accent}
               disabled={!canGoStep3}
@@ -202,34 +215,44 @@ export function PansementParcours({
 
       {step === 3 && suggestion && situation ? (
         <Animated.View key="s3" entering={FadeInRight.duration(220)} style={styles.panel}>
-          <Text style={styles.question}>Résumé de votre demande</Text>
+          <FicheChecklist item={item} validatedByApp />
+
+          <Text style={styles.question}>Sur l’ordonnance</Text>
           <View style={[styles.resumeCard, { borderColor: accent }]}>
-            <Text style={[styles.resumeLabel, { color: accent }]}>Profil de plaie</Text>
-            <Text style={styles.resumeValue}>{situation.label}</Text>
-            <Text style={[styles.resumeLabel, { color: accent }]}>Pansements</Text>
-            {[...selected].map((l) => (
-              <Text key={l} style={styles.resumeLibelle}>
-                • {l}
-              </Text>
-            ))}
-            {suggestion.duree ? (
-              <>
+            <View style={styles.resumeBlock}>
+              <Text style={[styles.resumeLabel, { color: accent }]}>Plaie</Text>
+              <Text style={styles.resumeValue}>{situation.label}</Text>
+            </View>
+            <View style={styles.resumeBlock}>
+              <Text style={[styles.resumeLabel, { color: accent }]}>Pansement</Text>
+              {[...selected].map((l) => (
+                <Text key={l} style={styles.resumeValue}>
+                  {l}
+                </Text>
+              ))}
+            </View>
+            {autresPossibles(suggestion, selected).length > 0 ? (
+              <View style={styles.resumeBlock}>
+                <Text style={[styles.resumeLabel, { color: accent }]}>Aussi possible</Text>
+                <Text style={styles.resumeAlso}>
+                  {autresPossibles(suggestion, selected).map(courtLibelle).join(' · ')}
+                </Text>
+              </View>
+            ) : null}
+            {dureeCourte(suggestion.duree) ? (
+              <View style={styles.resumeBlock}>
                 <Text style={[styles.resumeLabel, { color: accent }]}>Durée</Text>
-                <Text style={styles.resumeValue}>{suggestion.duree}</Text>
-              </>
+                <Text style={styles.resumeValue}>{dureeCourte(suggestion.duree)}</Text>
+              </View>
             ) : null}
           </View>
 
-          <CommentPrescrire accent={accent} tint={tint} compact />
-
           <GhostButton
-            label="Copier le résumé"
+            label="Copier sur l’ordonnance"
             icon="clipboard-outline"
             color={accent}
             onPress={copySelection}
           />
-
-          <FicheChecklist item={item} />
 
           <GhostButton label="Modifier le choix" icon="create-outline" color={colors.muted} onPress={() => go(2)} />
         </Animated.View>
@@ -239,7 +262,7 @@ export function PansementParcours({
 }
 
 function StepHeader({ step, accent, tint }: { step: Step; accent: string; tint: string }) {
-  const labels = ['Plaie', 'Pansement', 'Résumé'];
+  const labels = ['Plaie', 'Pansement', 'Ordonnance'];
   return (
     <View style={styles.steps}>
       {labels.map((label, i) => {
@@ -269,6 +292,36 @@ function StepHeader({ step, accent, tint }: { step: Step; accent: string; tint: 
       })}
     </View>
   );
+}
+
+function groupesLibelles(suggestion: { libelles: string[]; proposes?: string[] }) {
+  const misEnAvant = new Set(suggestion.proposes ?? []);
+  const proposees = suggestion.libelles.filter((libelle) => misEnAvant.has(libelle));
+  const autres = suggestion.libelles.filter((libelle) => !misEnAvant.has(libelle));
+  if (proposees.length === 0) return { proposees: suggestion.libelles, autres: [] as string[] };
+  return { proposees, autres };
+}
+
+function autresPossibles(
+  suggestion: { libelles: string[]; proposes?: string[] },
+  selected: Set<string>,
+): string[] {
+  const { proposees } = groupesLibelles(suggestion);
+  const restants = proposees.filter((libelle) => !selected.has(libelle));
+  if (restants.length > 0) return restants;
+  return suggestion.libelles.filter((libelle) => !selected.has(libelle));
+}
+
+function courtLibelle(libelle: string): string {
+  let text = libelle.split('—')[0].trim().replace(/^Pansements\s+/i, '');
+  text = text.replace(/^à base de\s+/i, '').replace(/^à l[’']/, '');
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function dureeCourte(duree?: string): string | null {
+  if (!duree) return null;
+  const match = duree.match(/(\d+)\s*jours/i);
+  return match ? `${match[1]} jours` : null;
 }
 
 const styles = StyleSheet.create({
@@ -334,6 +387,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   libelleText: { flex: 1, color: colors.ink, fontSize: 13.5, lineHeight: 19, fontWeight: '600' },
+  groupLabel: { color: colors.ink, fontSize: 13, fontWeight: '800', marginTop: spacing.xs },
   noteRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
   noteText: { flex: 1, color: colors.muted, fontSize: 12.5, lineHeight: 17 },
   alerte: {
@@ -347,13 +401,15 @@ const styles = StyleSheet.create({
   navRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
   gate: { color: colors.mutedLight, fontSize: 12, fontWeight: '600' },
   resumeCard: {
-    gap: 4,
-    padding: spacing.md,
+    gap: spacing.lg,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
     borderRadius: radii.md,
     borderWidth: 1.5,
     backgroundColor: colors.surface,
   },
-  resumeLabel: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', marginTop: 6 },
-  resumeValue: { color: colors.ink, fontSize: 14, lineHeight: 20, fontWeight: '700' },
-  resumeLibelle: { color: colors.inkSoft, fontSize: 13.5, lineHeight: 19 },
+  resumeBlock: { gap: 2 },
+  resumeLabel: { fontSize: 13, fontWeight: '700' },
+  resumeValue: { color: colors.ink, fontSize: 16, lineHeight: 22, fontWeight: '700' },
+  resumeAlso: { color: colors.inkSoft, fontSize: 15, lineHeight: 21, fontWeight: '600' },
 });

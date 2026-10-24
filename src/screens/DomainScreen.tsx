@@ -13,9 +13,11 @@ import { EmptyState, PressableScale, SectionHeader, SkeletonCard } from '../comp
 import { getDomaine, getSousGroupes } from '../data/arreteCatalog';
 import { EXEMPLES_ORDONNANCE } from '../data/exemplesOrdonnance';
 import {
+  countMedicamentsByDomaine,
   countMedicamentsByItemId,
   getItemsByDomaine,
   getMedicamentsByDomaine,
+  type MedAvailability,
 } from '../db/database';
 import type { RootStackParamList } from '../navigation/types';
 import { TAB_BAR_CLEARANCE } from '../navigation/TabBar';
@@ -42,7 +44,11 @@ export function DomainScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState<ItemWithCount[]>([]);
   const [domainMeds, setDomainMeds] = useState<BdpmMedicament[]>([]);
-  const [domainMedTotal, setDomainMedTotal] = useState(0);
+  const [domainAvailability, setDomainAvailability] = useState<MedAvailability>({
+    total: 0,
+    commercialisees: 0,
+  });
+  const [showRetired, setShowRetired] = useState(false);
   const [medQuery, setMedQuery] = useState('');
   const [medsLoading, setMedsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -52,14 +58,18 @@ export function DomainScreen({ route, navigation }: Props) {
     let cancelled = false;
     setFiltreGroupe('tous');
     setMedQuery('');
+    setShowRetired(false);
     setLoading(true);
     (async () => {
       const list = await getItemsByDomaine(domaineId);
       const withCounts = await Promise.all(
-        list.map(async (item) => ({
-          ...item,
-          medCount: await countMedicamentsByItemId(item.id),
-        })),
+        list.map(async (item) => {
+          const availability = await countMedicamentsByItemId(item.id);
+          return {
+            ...item,
+            medCount: availability.commercialisees || availability.total,
+          };
+        }),
       );
       if (cancelled) return;
       setItems(withCounts);
@@ -74,21 +84,34 @@ export function DomainScreen({ route, navigation }: Props) {
     let cancelled = false;
     setMedsLoading(true);
     const timer = setTimeout(() => {
-      getMedicamentsByDomaine(domaineId, 80, medQuery)
-        .then((meds) => {
+      void (async () => {
+        try {
+          const counts = await countMedicamentsByDomaine(domaineId);
           if (cancelled) return;
-          setDomainMeds(meds);
-          if (medQuery.trim().length < 2) setDomainMedTotal(meds.length);
-        })
-        .finally(() => {
+          setDomainAvailability(counts);
+          const onlyCommercial = !showRetired && counts.commercialisees > 0;
+          const meds = await getMedicamentsByDomaine(domaineId, 80, medQuery, {
+            commercialise: onlyCommercial,
+          });
+          if (!cancelled) setDomainMeds(meds);
+        } catch {
+          if (!cancelled) setDomainMeds([]);
+        } finally {
           if (!cancelled) setMedsLoading(false);
-        });
+        }
+      })();
     }, medQuery.trim().length >= 2 ? 180 : 0);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [domaineId, medQuery]);
+  }, [domaineId, medQuery, showRetired]);
+
+  const retiredCount = Math.max(0, domainAvailability.total - domainAvailability.commercialisees);
+  const listingCommercialise = !showRetired && domainAvailability.commercialisees > 0;
+  const domainMedShown = listingCommercialise
+    ? domainAvailability.commercialisees
+    : domainAvailability.total;
 
   const sections = useMemo(
     () => buildSections(items, sousGroupes, filtreGroupe),
@@ -124,10 +147,10 @@ export function DomainScreen({ route, navigation }: Props) {
           <HeroStat value={items.length} label="rubriques" loading={loading} />
           <View style={styles.heroDivider} />
           <HeroStat
-            value={domainMedTotal}
-            label="spécialités liées"
+            value={domainMedShown}
+            label="médicaments liés"
             loading={loading || (medsLoading && medQuery.trim().length < 2)}
-            plus={domainMedTotal >= 80}
+            plus={domainMedShown > 80}
           />
         </View>
       </LinearGradient>
@@ -146,7 +169,7 @@ export function DomainScreen({ route, navigation }: Props) {
             <View style={styles.ctaText}>
               <Text style={[styles.ctaTitle, { color: palette.onTint }]}>Prescrire un pansement</Text>
               <Text style={styles.ctaSub}>
-                Conseil de plaie → choix du pansement → résumé et cases à cocher
+                Conseil de plaie → choix du pansement → résumé
               </Text>
             </View>
             <Ionicons name="arrow-forward" size={18} color={palette.solid} />
@@ -275,7 +298,7 @@ export function DomainScreen({ route, navigation }: Props) {
                       <View style={styles.cardFooter}>
                         {item.medCount > 0 ? (
                           <Text style={[styles.medCount, { color: palette.onTint }]}>
-                            {item.medCount} spécialité{item.medCount > 1 ? 's' : ''} BDPM
+                            {item.medCount} médicament{item.medCount > 1 ? 's' : ''}
                           </Text>
                         ) : (
                           <Text style={styles.noMed}>Dispositifs / examens</Text>
@@ -290,10 +313,10 @@ export function DomainScreen({ route, navigation }: Props) {
           ))
         )}
 
-        {!loading && domainMedTotal > 0 ? (
+        {!loading && domainAvailability.total > 0 ? (
           <Collapsible
-            title={`Spécialités BDPM du domaine (${domainMedTotal}${domainMedTotal >= 80 ? '+' : ''})`}
-            subtitle="Ouvrir la fiche pour l’éligibilité IDE détaillée"
+            title="Médicaments du domaine"
+            subtitle="Ouvrez un nom pour voir la fiche."
             icon="flask"
             accent={palette.solid}
             tint={palette.tint}
@@ -302,13 +325,30 @@ export function DomainScreen({ route, navigation }: Props) {
             <SearchField
               value={medQuery}
               onChangeText={setMedQuery}
-              placeholder="Chercher une spécialité ou DCI…"
+              placeholder="Nom ou molécule…"
             />
+            {retiredCount > 0 ? (
+              <PressableScale
+                scaleTo={0.98}
+                accessibilityLabel={
+                  showRetired
+                    ? 'Masquer les médicaments qui ne sont plus vendus'
+                    : 'Voir les médicaments qui ne sont plus vendus'
+                }
+                onPress={() => setShowRetired((value) => !value)}
+              >
+                <Text style={styles.medSearchHint}>
+                  {showRetired
+                    ? 'Masquer ceux qui ne sont plus vendus'
+                    : `Voir ceux qui ne sont plus vendus (${retiredCount})`}
+                </Text>
+              </PressableScale>
+            ) : null}
             {medsLoading ? (
               <Text style={styles.medSearchHint}>Recherche…</Text>
             ) : domainMeds.length === 0 ? (
               <Text style={styles.medSearchHint}>
-                Aucune spécialité pour « {medQuery.trim()} » dans ce domaine.
+                Aucun médicament pour « {medQuery.trim()} » dans ce domaine.
               </Text>
             ) : (
               <>
@@ -333,6 +373,7 @@ export function DomainScreen({ route, navigation }: Props) {
                       substances={med.substances}
                       remboursable={med.remboursable}
                       tauxRemboursement={med.tauxRemboursement}
+                      etatCommercialisation={med.etatCommercialisation}
                       withMonogram
                     />
                   </PressableScale>
@@ -342,12 +383,12 @@ export function DomainScreen({ route, navigation }: Props) {
           </Collapsible>
         ) : null}
 
-        {!loading && !medsLoading && domainMedTotal === 0 ? (
+        {!loading && !medsLoading && domainAvailability.total === 0 ? (
           <View style={styles.noMedsBox}>
             <Ionicons name="information-circle" size={16} color={colors.muted} />
             <Text style={styles.noMedsText}>
-              Pas de spécialité BDPM rattachée à ce domaine — il s’agit surtout de dispositifs,
-              d’examens ou de vaccins. Voir les exemples de chaque rubrique.
+              Pas de médicament rattaché à ce domaine — il s’agit surtout de dispositifs ou
+              d’examens. Voir les exemples de chaque rubrique.
             </Text>
           </View>
         ) : null}
