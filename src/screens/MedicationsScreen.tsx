@@ -22,9 +22,9 @@ import { getMedicationStats, getMeta, listMedicaments, searchMedicaments } from 
 import type { RootStackParamList } from '../navigation/types';
 import { TAB_BAR_CLEARANCE } from '../navigation/TabBar';
 import { colors, radii, shadow, spacing, typography } from '../theme';
-import type { BdpmMedicament, NiveauIde } from '../types';
+import type { BdpmMedicament } from '../types';
 
-type Filtre = 'liste' | NiveauIde | 'tous';
+type Filtre = 'liste' | 'oui' | 'conditions';
 
 const FILTRES: {
   value: Filtre;
@@ -36,8 +36,6 @@ const FILTRES: {
   { value: 'liste', label: 'Liste IDE', color: colors.primary, tint: colors.primarySoft, icon: 'medkit-outline' },
   { value: 'oui', label: 'Dans la liste', color: colors.ok, tint: colors.okSoft, icon: 'checkmark-circle-outline' },
   { value: 'conditions', label: 'Sous conditions', color: colors.warn, tint: colors.warnSoft, icon: 'alert-circle-outline' },
-  { value: 'non', label: 'Hors liste', color: colors.danger, tint: colors.dangerSoft, icon: 'close-circle-outline' },
-  { value: 'tous', label: 'Tous', color: colors.muted, tint: colors.surfaceMuted, icon: 'layers-outline' },
 ];
 
 export function MedicationsScreen() {
@@ -55,7 +53,7 @@ export function MedicationsScreen() {
 
   const queryOpts = useMemo(
     () => ({
-      niveau: (filtre === 'tous' ? null : filtre) as NiveauIde | 'liste' | null,
+      niveau: filtre,
       ...medAttrToQuery(attrs),
     }),
     [filtre, attrs],
@@ -80,10 +78,8 @@ export function MedicationsScreen() {
 
   const counts: Record<Filtre, number> = {
     liste: stats.eligible,
-    tous: stats.total,
     oui: stats.autorisees,
     conditions: stats.sousConditions,
-    non: Math.max(0, stats.total - stats.eligible),
   };
 
   return (
@@ -107,9 +103,9 @@ export function MedicationsScreen() {
               <Ionicons name="shield-checkmark" size={16} color={colors.primary} />
             </View>
             <View style={styles.sourceText}>
-              <Text style={styles.sourceTitle}>Base publique des médicaments</Text>
+              <Text style={styles.sourceTitle}>Médicaments de l’arrêté</Text>
               <Text style={styles.sourceSub}>
-                <CountUp value={stats.total} style={styles.sourceStrong} /> médicaments
+                <CountUp value={stats.eligible} style={styles.sourceStrong} /> que l’infirmier peut prescrire
                 {importedAt ? ` · import du ${importedAt}` : ''}
               </Text>
             </View>

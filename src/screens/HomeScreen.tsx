@@ -98,7 +98,7 @@ export function HomeScreen() {
     setLoading(true);
     const timer = setTimeout(() => {
       const term = query.trim();
-      const medOpts = medAttrToQuery(medAttrs);
+      const medOpts = { ...medAttrToQuery(medAttrs), niveau: 'liste' as const };
       Promise.all([searchArrete(term), searchMedicaments(term, medOpts)])
         .then(([a, m]) => {
           setArrete(a);
